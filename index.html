@@ -1097,7 +1097,8 @@ function sPin(s, classroomId, after) {
   var first = !s.hasPin;
   app('<div class="top"><button class="btn sm" id="bk">←</button><h1>' + esc(s.firstName) + '</h1></div><div class="card" style="max-width:420px;margin:20px auto;text-align:center">' +
     (first ? '<label class="f" style="text-align:left">ชื่อเล่น</label><input type="text" id="nk" maxlength="20" autocomplete="off" placeholder="ชื่อเล่นของเรา" value="' + esc(s.nick || '') + '"><div style="height:10px"></div>' : '') +
-    '<h3>' + (first ? 'ตั้ง PIN 4 หลัก (จำไว้ใช้ทุกครั้ง)' : 'ใส่ PIN 4 หลัก') + '</h3>' +
+    '<h3>' + (first ? 'ตั้ง PIN 4 หลัก (จำไว้ใช้ทุกครั้ง)' : 'ใส่ PIN 4 หลักที่เคยตั้งไว้') + '</h3>' +
+    (first ? '' : '<p class="sub" style="margin-top:-6px">ชื่อนี้ตั้ง PIN แล้ว ถ้าไม่ใช่ชื่อเรา กด ← เลือกใหม่</p>') +
     '<input type="password" id="p1" class="pin" inputmode="numeric" maxlength="4" autocomplete="off">' +
     (first ? '<label class="f">ใส่ PIN อีกครั้ง</label><input type="password" id="p2" class="pin" inputmode="numeric" maxlength="4" autocomplete="off">' : '') +
     '<div style="height:12px"></div><button class="btn pri big" id="go">ยืนยัน</button><p class="sub">ลืม PIN? แจ้งครูให้รีเซ็ต</p></div>');
@@ -1136,7 +1137,15 @@ function sHome() {
     });
     if (!r.courses.length) h += '<div class="card empty">ยังไม่มีรายวิชา</div>';
     h += '<details class="card"><summary>วิธีเพิ่มแอปไว้หน้าจอหลัก</summary><p><b>iPhone:</b> กดปุ่มแชร์ (สี่เหลี่ยมมีลูกศร) → "เพิ่มไปยังหน้าจอโฮม"<br><b>Android:</b> กด ⋮ มุมขวาบน → "เพิ่มลงในหน้าจอหลัก"</p></details>';
-    b.innerHTML = h;
+    b.innerHTML = '<div id="shome">' + h + '</div>';
+    /* เช็คทุก 15 วิ: ครูเปิดรหัสบนกระดาน → การ์ดสีเหลืองขึ้นเองโดยไม่ต้องรีเฟรช */
+    var sig = function (x) { return JSON.stringify(x.courses.map(function (c) { return c.boardOpen; })); }, cur = sig(r);
+    clearInterval(window.sPollT);
+    window.sPollT = setInterval(function () {
+      if (!document.getElementById('shome')) return clearInterval(window.sPollT);
+      if (document.hidden) return;
+      SX('studentHome').then(function (r2) { if (document.getElementById('shome') && sig(r2) !== cur) sHome(); }).catch(function () { });
+    }, 15000);
   }).catch(function (e) { if (errMsg(e) === 'AUTH') return sLanding(); $('#body').textContent = errMsg(e); });
 }
 function sCourse(i, tab) {
