@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<title>ระบบวิชาเรียน</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#f4f5f8; --surface:#fff; --ink:#1d2433; --muted:#6b7385; --line:#e3e6ee; --brand:#4f6bed; --brand-ink:#fff;
+  --P:#1f9d55; --L:#d99a06; --M:#e0661b; --S:#3b82c4; --B:#5a8fd6; --E:#8b5cc7; --A:#d33d3d; --N:#c3c8d4;
+  --radius:14px; --shadow:0 1px 2px rgba(20,30,60,.06),0 2px 8px rgba(20,30,60,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Sarabun',system-ui,sans-serif;font-size:16px;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{max-width:1200px;margin:0 auto;padding:0 12px 80px}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 0 8px;display:flex;align-items:center;gap:8px}
+.top h1{font-size:18px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub{color:var(--muted);font-size:13px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;min-height:40px}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+.btn.dan{color:var(--A);border-color:#f0c4c4}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.sm{min-height:32px;padding:4px 10px;font-size:14px}
+.btn.big{min-height:52px;font-size:18px;padding:10px 20px;width:100%;justify-content:center}
+.card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin:10px 0}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.tabs{display:flex;gap:4px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:none;background:transparent;padding:8px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;color:var(--muted);font-weight:500}
+.tab.on{background:var(--ink);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-size:13px;background:#eef0f5;border:1px solid transparent;cursor:pointer;white-space:nowrap}
+.chip.on{border-color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+input[type=text],input[type=password],input[type=number],input[type=search],select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;min-height:44px}
+textarea{min-height:120px;resize:vertical}
+label.f{display:block;margin:10px 0 4px;font-size:14px;color:var(--muted)}
+.list .it{display:flex;align-items:center;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.list .it:last-child{border-bottom:none}
+.empty{color:var(--muted);text-align:center;padding:24px 8px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#1d2433;color:#fff;padding:10px 16px;border-radius:12px;z-index:100;max-width:90vw;font-size:15px}
+.sync{position:fixed;right:12px;bottom:12px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;z-index:50;box-shadow:var(--shadow)}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(15,20,35,.45);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:520px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 20px}
+@media(min-width:700px){.ov{align-items:center}.sheet{border-radius:18px}}
+.sheet h3{margin:0 0 8px;font-size:18px}
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin:8px 0}
+.opt{border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;cursor:pointer;background:#fff;font-weight:600}
+.opt .dot{margin-right:6px}
+/* board */
+.bar{position:sticky;top:52px;z-index:15;background:var(--bg);padding-bottom:6px}
+.clock{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-radius:12px;padding:8px 12px;color:#fff;margin:4px 0 8px}
+.clock .t{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.clock.ph0{background:#6b7385}.clock.ph1{background:var(--P)}.clock.ph2{background:var(--L)}.clock.ph3{background:var(--M)}.clock.done{background:#3a4152}
+.clock .btn{color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;user-select:none;-webkit-user-select:none}
+@media(min-width:900px){.grid{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}}
+.sc{position:relative;background:#fff;border-radius:12px;box-shadow:var(--shadow);padding:8px 6px 6px;text-align:center;cursor:pointer;border:3px solid var(--N);min-height:96px;display:flex;flex-direction:column;justify-content:space-between;touch-action:manipulation;transition:transform .08s}
+.sc:active{transform:scale(.96)}
+.sc .no{position:absolute;top:4px;left:6px;font-size:12px;color:var(--muted);font-weight:600}
+.sc .pt{position:absolute;top:3px;right:5px;font-size:12px;font-weight:700}
+.sc .nk{font-size:18px;font-weight:700;margin-top:10px;line-height:1.1;word-break:break-word}
+.sc .fn{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc .st{font-size:13px;font-weight:700;border-radius:8px;padding:2px 0;margin-top:4px;color:#fff;background:var(--N)}
+.sc .ic{position:absolute;bottom:30px;right:5px;font-size:11px}
+.sc.hide{display:none}
+.sc.hl{outline:4px solid #ffcc00;transform:scale(1.06);z-index:2}
+.sc.dim{opacity:.35}
+.pickbig{font-size:44px;font-weight:800;text-align:center;margin:12px 0}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th,.tbl td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:center}
+.tbl th:nth-child(2),.tbl td:nth-child(2){text-align:left}
+.tbl tr.risk td{background:#fff1f1}
+.scroll{overflow-x:auto}
+.qrbox{background:#fff;padding:12px;border-radius:16px;display:inline-block}
+.qrfull{position:fixed;inset:0;background:#fff;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center}
+.qrfull .big{font-size:28px;font-weight:700}
+.pin{font-size:32px;letter-spacing:12px;text-align:center}
+.res{text-align:center;padding:40px 10px}
+.res .ok{width:120px;height:120px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:64px;color:#fff}
+.pre{white-space:pre-wrap;line-height:1.6}
+.pill{border-radius:8px;padding:2px 8px;color:#fff;font-size:13px;font-weight:600}
+.bar-pct{height:8px;border-radius:4px;background:#eef0f5;overflow:hidden;margin-top:6px}
+.bar-pct>i{display:block;height:100%}
+@media print{.noprint{display:none!important}.qrfull{position:static}}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty">กำลังโหลด…</div></div>
+<script>
+var BOOT = (function(){var p={};new URLSearchParams(location.search).forEach(function(v,k){p[k]=v;});return {params:p,baseUrl:location.origin+location.pathname,version:'0.3.0',api:'https://script.google.com/macros/s/AKfycbwJjOJp0OKYQVFpQxBgkEW4CaBljMh7VW29Ud86LD6Hr0K6Px2lrL1_aYtT9aBRZ1na2g/exec'};})();
+</script>
+<script>
+/* ===================== Utilities ===================== */
+var P = BOOT.params || {};
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function app(html) { var a = $('#app'); a.innerHTML = html; window.scrollTo(0, 0); return a; }
+function fmtT(ms) { return ms ? new Date(ms).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' }) : ''; }
+function fmtD(ms) { return ms ? new Date(ms).toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Bangkok' }) : ''; }
+function fmtDS(d) { if (!d) return ''; var p = d.split('-'); return fmtD(Date.UTC(+p[0], +p[1] - 1, +p[2], 5)); }
+function mmss(ms) { ms = Math.max(0, ms); var s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+var toastT;
+function toast(m, ms) { var t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); } t.textContent = m; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(function () { t.style.display = 'none'; }, ms || 2600); }
+function errMsg(e) { return (e && e.message) ? e.message : String(e); }
+
+var ST = {
+  P: { t: 'มา', c: 'var(--P)' }, L: { t: 'สาย 1', c: 'var(--L)' }, M: { t: 'สาย 2', c: 'var(--M)' },
+  S: { t: 'ลาป่วย', c: 'var(--S)' }, B: { t: 'ลากิจ', c: 'var(--B)' }, E: { t: 'กิจกรรม', c: 'var(--E)' },
+  A: { t: 'ขาด', c: 'var(--A)' }, '': { t: 'ยังไม่เช็ค', c: 'var(--N)' }
+};
+var ST_ORDER = ['P', 'L', 'M', 'S', 'B', 'E', 'A'];
+var GROUP_COLORS = ['#e6553a', '#2f8fdd', '#27a35a', '#d59b00', '#8b5cc7', '#d6457f', '#169c9c', '#7a6a48', '#5b6ee1', '#c25e00'];
+
+/* ===================== API ===================== */
+function call(name, args, token) {
+  if (BOOT.api) {
+    // หน้าเว็บที่วางนอก Google: เรียก API ด้วย fetch แบบไม่ส่งคุกกี้บัญชี Google
+    return fetch(BOOT.api, {
+      method: 'POST', credentials: 'omit', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ name: name, args: args || {}, token: token || null })
+    }).then(function (r) { return r.json(); }, function () { throw new Error('เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่'); })
+      .then(function (j) { if (!j.ok) throw new Error(j.error); return j.res; });
+  }
+  return new Promise(function (res, rej) {
+    google.script.run.withSuccessHandler(res).withFailureHandler(rej).api(name, args || {}, token || null);
+  });
+}
+var S = { tTok: ls('tTok'), sTok: ls('sTok') };
+function T(name, args) {
+  return call(name, args, S.tTok).catch(function (e) {
+    if (errMsg(e) === 'AUTH') { S.tTok = null; ls('tTok', null); tLogin(); }
+    throw e;
+  });
+}
+function SX(name, args) {
+  return call(name, args, S.sTok).catch(function (e) {
+    if (errMsg(e) === 'AUTH') { S.sTok = null; ls('sTok', null); }
+    throw e;
+  });
+}
+function link(params) { var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&'); return BOOT.baseUrl + (q ? '?' + q : ''); }
+
+/* ===================== Modal / forms ===================== */
+function modal(html, onMount) {
+  closeModal();
+  var ov = document.createElement('div'); ov.className = 'ov'; ov.id = 'ov';
+  ov.innerHTML = '<div class="sheet">' + html + '</div>';
+  ov.addEventListener('click', function (e) { if (e.target === ov) closeModal(); });
+  document.body.appendChild(ov);
+  if (onMount) onMount(ov.firstChild);
+  return ov.firstChild;
+}
+function closeModal() { var o = $('#ov'); if (o) o.remove(); }
+/* fields: [{k,label,type,value,options:[[v,t]],ph}] */
+function form(title, fields, onSave, extraHtml) {
+  var h = '<h3>' + esc(title) + '</h3>';
+  fields.forEach(function (f) {
+    var v = f.value == null ? '' : f.value;
+    if (f.type === 'checkbox') { h += '<label class="row" style="margin:12px 0"><input type="checkbox" data-k="' + f.k + '"' + (v ? ' checked' : '') + ' style="width:22px;height:22px"> ' + esc(f.label) + '</label>'; return; }
+    h += '<label class="f">' + esc(f.label) + '</label>';
+    if (f.type === 'textarea') h += '<textarea data-k="' + f.k + '" placeholder="' + esc(f.ph || '') + '">' + esc(v) + '</textarea>';
+    else if (f.type === 'select') h += '<select data-k="' + f.k + '">' + f.options.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+    else h += '<input type="' + (f.type || 'text') + '" data-k="' + f.k + '" value="' + esc(v) + '" placeholder="' + esc(f.ph || '') + '"' + (f.type === 'number' ? ' inputmode="numeric"' : '') + '>';
+    if (f.hint) h += '<div class="sub">' + esc(f.hint) + '</div>';
+  });
+  h += (extraHtml || '') + '<div class="row" style="margin-top:16px"><button class="btn ghost grow" data-x="cancel">ยกเลิก</button><button class="btn pri grow" data-x="save">บันทึก</button></div>';
+  modal(h, function (el) {
+    var first = $('input,textarea', el); if (first && first.type !== 'checkbox') setTimeout(function () { first.focus(); }, 50);
+    $('[data-x=cancel]', el).onclick = closeModal;
+    $('[data-x=save]', el).onclick = function () {
+      var out = {};
+      $$('[data-k]', el).forEach(function (i) { out[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value.trim(); });
+      var b = this; b.disabled = true; b.textContent = 'กำลังบันทึก…';
+      Promise.resolve(onSave(out)).then(function (keep) { if (keep !== true) closeModal(); })
+        .catch(function (e) { toast(errMsg(e)); b.disabled = false; b.textContent = 'บันทึก'; });
+    };
+  });
+}
+function confirmBox(title, text, okText, onOk, danger) {
+  modal('<h3>' + esc(title) + '</h3><p>' + text + '</p><div class="row"><button class="btn ghost grow" data-x="c">ยกเลิก</button><button class="btn ' + (danger ? 'dan' : 'pri') + ' grow" data-x="o">' + esc(okText) + '</button></div>', function (el) {
+    $('[data-x=c]', el).onclick = closeModal;
+    $('[data-x=o]', el).onclick = function () { closeModal(); onOk(); };
+  });
+}
+
+/* ===================== Background save queue ===================== */
+var Q = { items: [], busy: false };
+function enqueue(name, args, onDone, key) {
+  Q.items.push({ name: name, args: args, onDone: onDone, key: key, tries: 0 });
+  syncBadge(); pump();
+}
+function pending(key) { return Q.items.some(function (i) { return i.key === key; }); }
+function pump() {
+  if (Q.busy || !Q.items.length) { syncBadge(); return; }
+  Q.busy = true; var it = Q.items[0];
+  T(it.name, it.args).then(function (r) { Q.items.shift(); if (it.onDone) it.onDone(r); })
+    .catch(function (e) {
+      it.tries++;
+      if (errMsg(e) === 'AUTH' || it.tries >= 6) { Q.items.shift(); toast('บันทึกไม่สำเร็จ: ' + errMsg(e)); }
+      return sleep(1200 * it.tries);
+    })
+    .then(function () { Q.busy = false; pump(); });
+}
+function syncBadge() {
+  var b = $('.sync');
+  if (!Q.items.length) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.className = 'sync'; document.body.appendChild(b); }
+  b.textContent = '⟳ กำลังบันทึก ' + Q.items.length;
+}
+window.addEventListener('beforeunload', function (e) { if (Q.items.length) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ===================== Router ===================== */
+var timers = [];
+function clearTimers() { timers.forEach(function (t) { clearInterval(t); }); timers = []; }
+function start() {
+  if (P.p === 'teacher') return S.tTok ? tHome() : tLogin();
+  if (P.p === 'j' && (P.r || P.c)) return sJoin(P.r || P.c, null); // ใช้ r เพราะ Apps Script สงวนชื่อ c
+  if (P.p === 'c' && P.s) return sCheckinStart(P.s, P.t);
+  if (S.sTok) return sHome();
+  sLanding();
+}
+
+/* =========================================================
+   ===================== TEACHER ===========================
+   ========================================================= */
+function tLogin() {
+  clearTimers();
+  app('<div class="card" style="max-width:420px;margin:60px auto"><h2 style="margin-top:0">ครู · เข้าสู่ระบบ</h2><div id="lg" class="sub">กำลังตรวจสอบ…</div></div>');
+  call('teacherStatus').then(function (r) {
+    $('#lg').innerHTML = (r.hasPassword ? '' : '<p>ครั้งแรก: ตั้งรหัสผ่านครู (อย่างน้อย 4 ตัว)</p>') +
+      '<input type="password" id="pw" placeholder="รหัสผ่านครู"><div style="height:10px"></div><button class="btn pri big" id="go">' + (r.hasPassword ? 'เข้าสู่ระบบ' : 'ตั้งรหัสและเข้าสู่ระบบ') + '</button>';
+    var go = function () {
+      call('teacherLogin', { password: $('#pw').value }).then(function (x) { S.tTok = x.token; ls('tTok', x.token); tHome(); }).catch(function (e) { toast(errMsg(e)); });
+    };
+    $('#go').onclick = go; $('#pw').onkeydown = function (e) { if (e.key === 'Enter') go(); };
+    $('#pw').focus();
+  }).catch(function (e) { $('#lg').textContent = errMsg(e); });
+}
+
+var TH = null; // teacher home data
+function loadHome() { return T('tHome').then(function (r) { TH = r; return r; }); }
+function termName(id) { var t = (TH.terms || []).filter(function (x) { return x.id === id; })[0]; return t ? t.name : ''; }
+function crName(id) { var c = TH.classrooms.filter(function (x) { return x.id === id; })[0]; return c ? c.name : '?'; }
+
+function tHome() {
+  clearTimers();
+  app('<div class="top"><h1>ระบบวิชาเรียน</h1><button class="btn sm" onclick="tManage()">⚙ จัดการ</button></div><div id="body" class="empty">กำลังโหลด…</div>');
+  loadHome().then(function (r) {
+    var b = $('#body'); b.className = '';
+    if (!r.terms.length) return quickSetup(b);
+    var courses = r.courses.filter(function (c) { return c.termId === r.activeTermId; });
+    var h = '<div class="sub">ภาคเรียน ' + esc(termName(r.activeTermId)) + '</div>';
+    if (!courses.length) h += '<div class="card empty">ยังไม่มีรายวิชาในภาคเรียนนี้<br><br><button class="btn pri" onclick="tManage(\'courses\')">+ เพิ่มรายวิชา</button></div>';
+    courses.forEach(function (c) {
+      var secs = r.sections.filter(function (s) { return s.courseId === c.id; })
+        .sort(function (a, b) { return crName(a.classroomId).localeCompare(crName(b.classroomId), 'th', { numeric: true }); });
+      h += '<div class="card"><div class="row"><span class="dot" style="background:' + esc(c.color) + ';width:12px;height:12px"></span><b class="grow">' + esc(c.name) + '</b><span class="sub">' + esc(c.code) + '</span></div><div class="opts">';
+      secs.forEach(function (s) {
+        h += '<div class="opt" onclick="tSection(\'' + s.id + '\')">' + esc(crName(s.classroomId)) + (s.openSessionId ? '<div class="sub" style="color:var(--P)">● กำลังสอน</div>' : '') + '</div>';
+      });
+      h += '<div class="opt" style="font-weight:400;color:var(--muted)" onclick="addSections(\'' + c.id + '\')">+ เพิ่มห้อง</div></div></div>';
+    });
+    b.innerHTML = h;
+  }).catch(function (e) { $('#body').textContent = errMsg(e); });
+}
+
+/* ตั้งค่าแบบเร็วครั้งแรก */
+function quickSetup(el) {
+  el.innerHTML = '<div class="card"><h3 style="margin-top:0">เริ่มต้นใช้งาน</h3><p class="sub">กรอก 3 ช่องนี้ ระบบจะสร้างภาคเรียน วิชา และห้องให้ทั้งหมด (แก้ไขภายหลังได้)</p>' +
+    '<label class="f">ภาคเรียน</label><input type="text" id="q1" value="2/2569">' +
+    '<label class="f">ชื่อวิชา (ถ้ามีหลายวิชา ใส่วิชาแรกก่อน)</label><input type="text" id="q2" placeholder="เช่น ดนตรี ม.1">' +
+    '<label class="f">ห้องที่สอนวิชานี้ (คั่นด้วย , )</label><input type="text" id="q3" placeholder="เช่น ม.1/1, ม.1/2, ม.1/3">' +
+    '<div style="height:12px"></div><button class="btn pri big" id="qs">สร้าง</button></div>';
+  $('#qs').onclick = function () {
+    var b = this; b.disabled = true; b.textContent = 'กำลังสร้าง…';
+    var term, course;
+    T('saveTerm', { name: $('#q1').value.trim(), active: true }).then(function (t) {
+      term = t; return T('saveCourse', { termId: t.id, name: $('#q2').value.trim() || 'วิชาใหม่' });
+    }).then(function (c) {
+      course = c;
+      var names = $('#q3').value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
+      return names.reduce(function (p, n) {
+        return p.then(function () { return T('saveClassroom', { name: n }); }).then(function (cr) { return T('saveSection', { courseId: course.id, classroomId: cr.id }); });
+      }, Promise.resolve());
+    }).then(function () { toast('สร้างเรียบร้อย ต่อไปเพิ่มรายชื่อนักเรียนในแต่ละห้อง'); tManage('rooms'); })
+      .catch(function (e) { toast(errMsg(e)); b.disabled = false; b.textContent = 'สร้าง'; });
+  };
+}
+
+function addSections(courseId) {
+  var opts = TH.classrooms.map(function (c) { return '<label class="row" style="padding:6px 0"><input type="checkbox" value="' + c.id + '" style="width:22px;height:22px"> ' + esc(c.name) + '</label>'; }).join('');
+  modal('<h3>เพิ่มห้องให้วิชานี้</h3>' + (opts || '<p class="sub">ยังไม่มีห้อง</p>') +
+    '<label class="f">หรือพิมพ์ห้องใหม่ (คั่นด้วย , )</label><input type="text" id="nr" placeholder="ม.1/4, ม.1/5">' +
+    '<div class="row" style="margin-top:14px"><button class="btn ghost grow" onclick="closeModal()">ยกเลิก</button><button class="btn pri grow" id="ok">เพิ่ม</button></div>', function (el) {
+      $('#ok', el).onclick = function () {
+        var ids = $$('input[type=checkbox]:checked', el).map(function (i) { return i.value; });
+        var names = $('#nr', el).value.split(/[,，]/).map(function (x) { return x.trim(); }).filter(Boolean);
+        var p = Promise.resolve();
+        names.forEach(function (n) { p = p.then(function () { return T('saveClassroom', { name: n }); }).then(function (cr) { ids.push(cr.id); }); });
+        p.then(function () { return ids.reduce(function (q, id) { return q.then(function () { return T('saveSection', { courseId: courseId, classroomId: id }); }); }, Promise.resolve()); })
+          .then(function () { closeModal(); tHome(); }).catch(function (e) { toast(errMsg(e)); });
+      };
+    });
+}
+
+/* ---------------- จัดการ ---------------- */
+function tManage(tab) {
+  clearTimers();
+  tab = tab || 'courses';
+  app('<div class="top"><button class="btn sm" onclick="tHome()">←</button><h1>จัดการ</h1></div>' +
+    '<div class="tabs">' + [['courses', 'รายวิชา'], ['rooms', 'ห้อง/รายชื่อ'], ['terms', 'ภาคเรียน'], ['account', 'บัญชีครู']].map(function (t) {
+      return '<button class="tab' + (t[0] === tab ? ' on' : '') + '" onclick="tManage(\'' + t[0] + '\')">' + t[1] + '</button>';
+    }).join('') + '</div><div id="body" class="empty">กำลังโหลด…</div>');
+  loadHome().then(function (r) {
+    var b = $('#body'); b.className = '';
+    if (tab === 'terms') {
+      b.innerHTML = '<div class="card list">' + (r.terms.map(function (t) {
+        return '<div class="it" onclick="editTerm(\'' + t.id + '\')"><b class="grow">' + esc(t.name) + '</b>' + (t.id === r.activeTermId ? '<span class="chip">ใช้งานอยู่</span>' : '') + '</div>';
+      }).join('') || '<div class="empty">ยังไม่มี</div>') + '</div><button class="btn pri" onclick="editTerm()">+ เพิ่มภาคเรียน</button>';
+    } else if (tab === 'courses') {
+      var cs = r.courses.filter(function (c) { return c.termId === r.activeTermId; });
+      b.innerHTML = '<div class="sub">ภาคเรียน ' + esc(termName(r.activeTermId)) + '</div><div class="card list">' + (cs.map(function (c) {
+        var n = r.sections.filter(function (s) { return s.courseId === c.id; }).length;
+        return '<div class="it" onclick="editCourse(\'' + c.id + '\')"><span class="dot" style="background:' + esc(c.color) + '"></span><b class="grow">' + esc(c.name) + '</b><span class="sub">' + n + ' ห้อง</span></div>';
+      }).join('') || '<div class="empty">ยังไม่มีรายวิชา</div>') + '</div><button class="btn pri" onclick="editCourse()">+ เพิ่มรายวิชา</button>';
+    } else if (tab === 'rooms') {
+      b.innerHTML = '<div class="card list">' + (r.classrooms.map(function (c) {
+        return '<div class="it" onclick="tClassroom(\'' + c.id + '\')"><b class="grow">' + esc(c.name) + '</b><span class="sub">' + c.count + ' คน ›</span></div>';
+      }).join('') || '<div class="empty">ยังไม่มีห้อง</div>') + '</div><div class="row"><button class="btn pri" onclick="importAllDlg()">📋 นำเข้าหลายห้องจาก Excel</button><button class="btn" onclick="editRoom()">+ เพิ่มห้อง</button></div>';
+    } else {
+      b.innerHTML = '<div class="card"><p>ลิงก์สำหรับครู (บันทึกไว้ในเบราว์เซอร์):</p><input type="text" readonly value="' + esc(link({ p: 'teacher' })) + '" onclick="this.select()">' +
+        '<div style="height:12px"></div><button class="btn" onclick="chgPw()">เปลี่ยนรหัสผ่าน</button> <button class="btn dan" onclick="ls(\'tTok\',null);S.tTok=null;tLogin()">ออกจากระบบ</button></div>';
+    }
+  }).catch(function (e) { $('#body').textContent = errMsg(e); });
+}
+function chgPw() { form('เปลี่ยนรหัสผ่านครู', [{ k: 'password', label: 'รหัสผ่านใหม่', type: 'password' }], function (v) { return T('changePassword', v).then(function (x) { S.tTok = x.token; ls('tTok', x.token); toast('เปลี่ยนแล้ว'); }); }); }
+function editTerm(id) {
+  var t = id ? TH.terms.filter(function (x) { return x.id === id; })[0] : { name: '', active: true };
+  form(id ? 'แก้ไขภาคเรียน' : 'เพิ่มภาคเรียน', [{ k: 'name', label: 'ชื่อภาคเรียน', value: t.name, ph: 'เช่น 1/2570' }, { k: 'active', label: 'ใช้เป็นภาคเรียนปัจจุบัน', type: 'checkbox', value: id ? t.id === TH.activeTermId : true }],
+    function (v) { v.id = id; return T('saveTerm', v).then(function () { tManage('terms'); }); },
+    id ? '<div style="margin-top:10px"><button class="btn dan sm" onclick="delX(\'deleteTerm\',\'' + id + '\',\'terms\')">ลบภาคเรียนนี้</button></div>' : '');
+}
+function delX(fn, id, back) { confirmBox('ยืนยันการลบ', 'ลบแล้วกู้คืนไม่ได้', 'ลบ', function () { T(fn, { id: id }).then(function () { toast('ลบแล้ว'); tManage(back); }).catch(function (e) { toast(errMsg(e)); }); }, true); }
+function editCourse(id) {
+  var c = id ? TH.courses.filter(function (x) { return x.id === id; })[0] : { name: '', code: '', color: '#4f6bed' };
+  var colors = [['#4f6bed', 'น้ำเงิน'], ['#1f9d55', 'เขียว'], ['#e0661b', 'ส้ม'], ['#8b5cc7', 'ม่วง'], ['#d6457f', 'ชมพู'], ['#169c9c', 'ฟ้าเขียว']];
+  form(id ? 'แก้ไขรายวิชา' : 'เพิ่มรายวิชา', [
+    { k: 'name', label: 'ชื่อวิชา', value: c.name, ph: 'เช่น ดนตรี ม.1' },
+    { k: 'code', label: 'รหัสวิชา', value: c.code, ph: 'เช่น ศ21102' },
+    { k: 'color', label: 'สี', type: 'select', value: c.color, options: colors }
+  ], function (v) { v.id = id; v.termId = id ? c.termId : TH.activeTermId; return T('saveCourse', v).then(function () { tManage('courses'); }); },
+    id ? '<div class="row" style="margin-top:10px"><button class="btn sm" onclick="copyCourse(\'' + id + '\')">คัดลอกวิชานี้</button><button class="btn dan sm" onclick="delX(\'deleteCourse\',\'' + id + '\',\'courses\')">ลบวิชา</button></div>' : '');
+}
+function copyCourse(id) {
+  form('คัดลอกวิชา', [{ k: 'termId', label: 'ไปยังภาคเรียน', type: 'select', value: TH.activeTermId, options: TH.terms.map(function (t) { return [t.id, t.name]; }) }],
+    function (v) { v.id = id; return T('copyCourse', v).then(function () { toast('คัดลอกแล้ว (ข้อมูลรายวิชาและข้อตกลงติดไปด้วย)'); tManage('courses'); }); });
+}
+function editRoom(id) {
+  var c = id ? TH.classrooms.filter(function (x) { return x.id === id; })[0] : { name: '' };
+  form(id ? 'แก้ไขชื่อห้อง' : 'เพิ่มห้อง', [{ k: 'name', label: 'ชื่อห้อง', value: c.name, ph: 'เช่น ม.1/1' }],
+    function (v) { v.id = id; return T('saveClassroom', v).then(function (cr) { id ? tClassroom(id) : tClassroom(cr.id); }); });
+}
+
+/* ---------------- ห้อง / รายชื่อ ---------------- */
+var CR = null;
+function tClassroom(id, back) {
+  clearTimers();
+  app('<div class="top"><button class="btn sm" id="bk">←</button><h1 id="ttl">ห้อง</h1><button class="btn sm" onclick="editRoom(\'' + id + '\')">แก้ชื่อ</button></div><div id="body" class="empty">กำลังโหลด…</div>');
+  $('#bk').onclick = back || function () { tManage('rooms'); };
+  T('classroomView', { classroomId: id }).then(function (r) {
+    CR = r;
+    $('#ttl').textContent = 'ห้อง ' + r.classroom.name;
+    var b = $('#body'); b.className = '';
+    var noPin = r.students.filter(function (s) { return !s.hasPin; }).length;
+    var h = '<div class="row"><button class="btn pri" onclick="importDlg(\'' + id + '\')">📋 วางรายชื่อจาก Excel</button><button class="btn" onclick="editStudent(null,\'' + id + '\')">+ เพิ่มทีละคน</button><button class="btn" onclick="joinQR()">▦ QR เข้าระบบของห้อง</button></div>';
+    h += '<div class="sub" style="margin-top:8px">' + r.students.length + ' คน · ยังไม่ตั้ง PIN ' + noPin + ' คน</div>';
+    h += '<div class="card list">' + (r.students.map(function (s) {
+      return '<div class="it" onclick="editStudent(\'' + s.id + '\')"><b style="width:28px;color:var(--muted)">' + esc(s.no || '') + '</b><div class="grow">' + esc(s.firstName + ' ' + s.lastName) + (s.nick ? ' <span class="sub">(' + esc(s.nick) + ')</span>' : '') + '</div>' +
+        (s.noPhone ? '<span title="ไม่มีมือถือ">📵</span>' : '') + (s.hasPin ? '<span class="chip">PIN ✓</span>' : '<span class="chip" style="background:#fff3d6">ยังไม่เข้า</span>') + '</div>';
+    }).join('') || '<div class="empty">ยังไม่มีนักเรียน กด "วางรายชื่อจาก Excel"</div>') + '</div>';
+    b.innerHTML = h;
+  }).catch(function (e) { $('#body').textContent = errMsg(e); });
+}
+function importDlg(crId) {
+  form('วางรายชื่อจาก Excel', [{
+    k: 'text', label: 'คัดลอกคอลัมน์จาก Excel ตามลำดับ: เลขที่ | เลขประจำตัว | ชื่อ | นามสกุล | ชื่อเล่น (ชื่อเล่นไม่ใส่ก็ได้)', type: 'textarea',
+    ph: '1\t61234\tด.ช.สมชาย\tใจดี\tชาย\n2\t61235\tด.ญ.มานี\tมีนา\tนี'
+  }], function (v) {
+    return T('importStudents', { classroomId: crId, text: v.text }).then(function (r) {
+      toast('เพิ่ม ' + r.added + ' คน · อัปเดต ' + r.updated + ' คน' + (r.skipped ? ' · ข้าม ' + r.skipped + ' บรรทัด' : ''), 4000);
+      tClassroom(crId);
+    });
+  }, '<p class="sub">ถ้าเลขประจำตัวหรือเลขที่ซ้ำกับคนเดิม ระบบจะอัปเดตแทนการเพิ่มซ้ำ ชื่อกับนามสกุลอยู่ช่องเดียวกันก็ได้ ระบบแยกให้</p>');
+}
+function importAllDlg() {
+  var cs = TH.courses.filter(function (c) { return c.termId === TH.activeTermId; });
+  form('นำเข้าหลายห้องจาก Excel', [
+    { k: 'text', label: 'เปิดไฟล์ รายชื่อ-ม3-ทั้งหมด.csv ด้วย Excel → Ctrl+A → Ctrl+C → วางที่นี่ (คอลัมน์: ห้อง | เลขที่ | เลขประจำตัว | คำนำหน้า | ชื่อ | นามสกุล | ชื่อเล่น)', type: 'textarea', ph: 'ม.3/1\t1\t16647\tเด็กชาย\tกฤดิพรรธน์\tสิงห์น้อย\t' },
+    { k: 'courseId', label: 'ผูกทุกห้องเข้ากับวิชา', type: 'select', value: cs.length ? cs[0].id : '', options: [['', '— ไม่ผูก —']].concat(cs.map(function (c) { return [c.id, c.name]; })) }
+  ], function (v) {
+    toast('กำลังนำเข้า… อาจใช้เวลาครึ่งนาที', 30000);
+    return T('importAll', { text: v.text, courseId: v.courseId }).then(function (r) {
+      toast(r.rooms + ' ห้อง' + (r.newRooms ? ' (ห้องใหม่ ' + r.newRooms + ')' : '') + ' · เพิ่ม ' + r.added + ' คน · อัปเดต ' + r.updated + ' คน' + (r.linked ? ' · ผูกวิชา ' + r.linked + ' ห้อง' : '') + (r.skipped ? ' · ข้าม ' + r.skipped + ' บรรทัด' : ''), 6000);
+      tManage('rooms');
+    });
+  }, '<p class="sub">ห้องที่ยังไม่มี ระบบสร้างให้เอง · คนที่เลขประจำตัวซ้ำ ระบบอัปเดตแทนการเพิ่มซ้ำ · บรรทัดหัวตารางระบบข้ามให้</p>');
+}
+function editStudent(id, crId) {
+  var s = id ? CR.students.filter(function (x) { return x.id === id; })[0] : { no: '', sid: '', firstName: '', lastName: '', nick: '', noPhone: false };
+  crId = crId || CR.classroom.id;
+  form(id ? 'แก้ไขนักเรียน' : 'เพิ่มนักเรียน', [
+    { k: 'no', label: 'เลขที่', type: 'number', value: s.no }, { k: 'sid', label: 'เลขประจำตัว', value: s.sid },
+    { k: 'firstName', label: 'ชื่อ', value: s.firstName }, { k: 'lastName', label: 'นามสกุล', value: s.lastName },
+    { k: 'nick', label: 'ชื่อเล่น', value: s.nick }, { k: 'noPhone', label: 'ไม่มีมือถือ (ประเมินด้วยวิธีอื่น)', type: 'checkbox', value: s.noPhone }
+  ], function (v) { v.id = id; v.classroomId = crId; return T('saveStudent', v).then(function () { tClassroom(crId); }); },
+    id ? '<div class="row" style="margin-top:10px">' + (s.hasPin ? '<button class="btn sm" onclick="resetPin(\'' + id + '\')">รีเซ็ต PIN</button>' : '') + '<button class="btn dan sm" onclick="delStudent(\'' + id + '\')">นำออกจากห้อง</button></div>' : '');
+}
+function resetPin(id) { confirmBox('รีเซ็ต PIN', 'นักเรียนจะต้องตั้ง PIN ใหม่ตอนเข้าระบบครั้งถัดไป', 'รีเซ็ต', function () { T('resetPin', { studentId: id }).then(function () { toast('รีเซ็ตแล้ว'); tClassroom(CR.classroom.id); }); }); }
+function delStudent(id) { confirmBox('นำนักเรียนออก', 'ข้อมูลการเข้าเรียนเดิมยังเก็บไว้', 'นำออก', function () { T('deleteStudent', { studentId: id }).then(function () { tClassroom(CR.classroom.id); }); }, true); }
+function joinQR(crId, crNameTxt) {
+  crId = crId || CR.classroom.id; crNameTxt = crNameTxt || CR.classroom.name;
+  var url = link({ p: 'j', r: crId });
+  var ov = document.createElement('div'); ov.className = 'qrfull'; ov.id = 'qrj';
+  ov.innerHTML = '<div class="big">ห้อง ' + esc(crNameTxt) + '</div><div>สแกนเพื่อเข้าระบบวิชาเรียน</div><div class="qrbox" id="qj"></div>' +
+    '<div class="sub" style="word-break:break-all;max-width:520px">' + esc(url) + '</div>' +
+    '<div class="row noprint"><button class="btn" onclick="window.print()">พิมพ์</button><button class="btn pri" onclick="this.closest(\'.qrfull\').remove()">ปิด</button></div>';
+  document.body.appendChild(ov);
+  var size = Math.min(window.innerWidth - 60, window.innerHeight - 260, 420);
+  makeQR($('#qj'), url, size);
+}
+function makeQR(el, text, size) {
+  el.innerHTML = '';
+  if (typeof QRCode === 'undefined') { el.innerHTML = '<div class="sub">โหลดตัวสร้าง QR ไม่ได้ (ตรวจอินเทอร์เน็ต)</div>'; return null; }
+  return new QRCode(el, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+}
+
+/* =========================================================
+   ===================== SECTION / CARD BOARD ==============
+   ========================================================= */
+var B = null;
+var MODES = [
+  ['att', '✓ เช็คชื่อ'], ['beh', '★ พฤติกรรม'], ['check', '☑ เช็ครายการ'], ['score', '# คะแนนเร็ว'], ['pick', '🎲 สุ่มชื่อ'], ['group', '◑ แบ่งกลุ่ม']
+];
+function tSection(secId, tab) {
+  clearTimers();
+  B = B && B.secId === secId ? B : { secId: secId, mode: 'att', search: '', filter: '', undo: [], picked: {}, itemId: null };
+  tab = tab || 'board';
+  app('<div class="top"><button class="btn sm" onclick="tHome()">←</button><h1 id="ttl">…</h1></div>' +
+    '<div class="tabs" id="stabs">' + [['board', 'การ์ดนักเรียน'], ['sum', 'สรุปการเข้าเรียน'], ['hist', 'ประวัติคาบ'], ['info', 'ข้อมูลรายวิชา']].map(function (t) {
+      return '<button class="tab' + (t[0] === tab ? ' on' : '') + '" onclick="tSection(\'' + secId + '\',\'' + t[0] + '\')">' + t[1] + '</button>';
+    }).join('') + '</div><div id="body" class="empty">กำลังโหลด…</div>');
+  T('sectionView', { sectionId: secId }).then(function (sv) {
+    B.sv = sv;
+    $('#ttl').innerHTML = esc(sv.course.name) + ' · ' + esc(sv.classroom.name);
+    if (tab === 'board') return boardInit(sv.openSessionId);
+    if (tab === 'sum') return renderSummary();
+    if (tab === 'hist') return renderHistory();
+    if (tab === 'info') return renderInfo();
+  }).catch(function (e) { $('#body').textContent = errMsg(e); });
+}
+
+function boardInit(sessionId) {
+  B.sessionId = sessionId || null; B.state = null;
+  var p = sessionId ? T('sessionState', { sessionId: sessionId }) : Promise.resolve(null);
+  Promise.all([p, T('itemsView', { sectionId: B.secId, sessionId: sessionId || '' }), T('groupsets', { sectionId: B.secId })]).then(function (r) {
+    B.state = r[0]; B.items = r[1].items; B.marks = r[1].marks; B.groupsets = r[2];
+    if (r[0]) B.offset = r[0].serverNow - Date.now();
+    if (!B.groupId && B.groupsets.length) B.groupId = B.groupsets[B.groupsets.length - 1].id;
+    renderBoard();
+    timers.push(setInterval(tickClock, 1000));
+    timers.push(setInterval(pollState, 8000));
+  }).catch(function (e) { $('#body').textContent = errMsg(e); });
+}
+function now() { return Date.now() + (B && B.offset || 0); }
+function attMap() { var m = {}; if (B.state) B.state.attendance.forEach(function (a) { m[a.studentId] = a; }); return m; }
+function behMap() { var m = {}; if (B.state) B.state.behavior.forEach(function (b) { m[b.studentId] = (m[b.studentId] || 0) + b.points; }); return m; }
+function sessionOpen() { return B.state && B.state.session.status === 'open'; }
+
+function renderBoard() {
+  var b = $('#body'); if (!b) return; b.className = '';
+  var h = '<div class="tabs">' + MODES.map(function (m) { return '<button class="tab' + (B.mode === m[0] ? ' on' : '') + '" data-mode="' + m[0] + '">' + m[1] + '</button>'; }).join('') + '</div>';
+  h += '<div class="bar" id="bar"></div><div class="grid" id="grid"></div><div id="below"></div>';
+  b.innerHTML = h;
+  $$('[data-mode]', b).forEach(function (x) { x.onclick = function () { B.mode = x.dataset.mode; B.filter = ''; renderBoard(); }; });
+  renderBar(); renderCards();
+}
+
+/* ---------- แถบควบคุมด้านบน (เปลี่ยนตามโหมด) ---------- */
+function renderBar() {
+  var bar = $('#bar'); if (!bar) return;
+  var needSession = ['att', 'beh', 'check'].indexOf(B.mode) >= 0;
+  var h = '';
+  if (needSession && !B.state) {
+    bar.innerHTML = '<div class="card" style="text-align:center"><p style="margin-top:0">ยังไม่ได้เริ่มคาบเรียนวันนี้</p><button class="btn pri big" id="startS">▶ เริ่มคาบเรียน</button></div>';
+    $('#startS').onclick = function () {
+      this.disabled = true;
+      T('startSession', { sectionId: B.secId }).then(function (st) { boardInit(st.session.id); }).catch(function (e) { toast(errMsg(e)); });
+    };
+    $('#grid').style.display = 'none';
+    return;
+  }
+  $('#grid').style.display = '';
+  if (B.state && !sessionOpen() && needSession) {
+    h += '<div class="card row" style="background:#fff8e5"><div class="grow">คาบ ' + esc(fmtDS(B.state.session.date)) + ' · ' + (B.state.session.status === 'cancelled' ? 'งดคาบ' : 'ปิดแล้ว') + ' (แก้ไขย้อนหลังได้)</div><button class="btn sm" onclick="reopenS()">เปิดคาบอีกครั้ง</button><button class="btn sm" onclick="tSection(B.secId,\'hist\')">กลับ</button></div>';
+  }
+  if (B.mode === 'att') {
+    if (sessionOpen()) h += '<div id="clock"></div>';
+    h += '<div class="row" style="margin:4px 0 6px">' + countChips() + '</div>';
+    h += '<div class="row"><input type="search" id="q" placeholder="ค้นหา เลขที่/ชื่อ/ชื่อเล่น" class="grow" style="flex:1;min-width:140px" value="' + esc(B.search) + '">' +
+      (sessionOpen() ? '<button class="btn" onclick="qrOpen()">▦ QR</button>' : '') +
+      '<button class="btn" onclick="undo()" title="ย้อนกลับ">↶</button>' +
+      (sessionOpen() ? '<button class="btn pri" onclick="closeS()">ปิดคาบ</button><button class="btn ghost" onclick="moreS()">⋯</button>' : '') + '</div>';
+    h += '<div class="sub" style="margin-top:4px">แตะ = มา/สาย (ตามเวลา) → แตะอีก = ลากิจ → แตะอีก = ล้าง · กดค้าง = เลือกสถานะอื่น</div>';
+  } else if (B.mode === 'beh') {
+    h += '<div class="row"><input type="search" id="q" placeholder="ค้นหา" class="grow" style="flex:1;min-width:140px" value="' + esc(B.search) + '">' +
+      '<button class="btn" onclick="behAll(-1)">− หักทั้งห้อง</button><button class="btn" onclick="behAll(1)">+ ทั้งห้อง</button><button class="btn" onclick="undo()">↶</button></div>' +
+      '<div class="sub" style="margin-top:4px">แตะ = +1 · กดค้าง = เลือก +/− พร้อมเหตุผล · ตัวเลขมุมขวาบน = คะแนนพฤติกรรมของคาบนี้</div>';
+  } else if (B.mode === 'check' || B.mode === 'score') {
+    var kind = B.mode;
+    var its = B.items.filter(function (i) { return i.kind === kind; });
+    if (!its.some(function (i) { return i.id === B.itemId; })) B.itemId = its.length ? its[its.length - 1].id : null;
+    h += '<div class="row">' + its.map(function (i) { return '<span class="chip' + (i.id === B.itemId ? ' on' : '') + '" data-item="' + i.id + '">' + esc(i.name) + (kind === 'score' ? ' /' + i.maxScore : '') + '</span>'; }).join('') +
+      '<span class="chip" onclick="newItem(\'' + kind + '\')">+ หัวข้อใหม่</span>' + (B.itemId ? '<span class="chip" onclick="editItem()">แก้ไข</span>' : '') + '</div>';
+    h += '<div class="row" style="margin-top:6px"><input type="search" id="q" placeholder="ค้นหา" class="grow" style="flex:1;min-width:140px" value="' + esc(B.search) + '">' + (B.itemId ? '<span class="sub" id="itemCount"></span>' : '') + '</div>';
+    h += '<div class="sub" style="margin-top:4px">' + (kind === 'check' ? 'แตะ = ✓ → แตะอีก = ✗ → แตะอีก = ล้าง (บันทึกแยกต่อคาบ)' : 'แตะการ์ดแล้วเลือกคะแนน (คะแนนนี้เก็บถาวร ไม่ผูกกับคาบ)') + '</div>';
+    if (!B.itemId) h += '<div class="card empty">สร้างหัวข้อก่อน เช่น ' + (kind === 'check' ? '"นำขลุ่ยมา" "ทำการบ้าน"' : '"ปฏิบัติจังหวะ" คะแนนเต็ม 10') + '</div>';
+  } else if (B.mode === 'pick') {
+    h += '<div class="row"><label class="row"><input type="checkbox" id="pOnly" ' + (B.pickOnlyPresent !== false ? 'checked' : '') + ' style="width:20px;height:20px"> เฉพาะคนที่มา</label>' +
+      '<label class="row"><input type="checkbox" id="pNoRep" ' + (B.pickNoRepeat !== false ? 'checked' : '') + ' style="width:20px;height:20px"> ไม่ซ้ำคนเดิม</label>' +
+      '<button class="btn pri" id="pickGo" style="margin-left:auto">🎲 สุ่ม</button><button class="btn sm" onclick="B.picked={};renderCards();toast(\'ล้างรายชื่อที่สุ่มแล้ว\')">ล้าง</button></div><div id="pickRes"></div>';
+  } else if (B.mode === 'group') {
+    var gs = B.groupsets;
+    h += '<div class="row">' + gs.map(function (g) { return '<span class="chip' + (g.id === B.groupId ? ' on' : '') + '" data-gs="' + g.id + '">' + esc(g.name) + '</span>'; }).join('') +
+      '<span class="chip" onclick="newGroups()">+ สุ่มกลุ่มใหม่</span>' + (B.groupId ? '<span class="chip" onclick="groupMenu()">⋯</span>' : '') + '</div>';
+    h += '<div class="sub" style="margin-top:4px">' + (B.groupId ? 'แตะการ์ด = ย้ายไปกลุ่มถัดไป (บันทึกอัตโนมัติ)' : 'กด "+ สุ่มกลุ่มใหม่" เพื่อแบ่งกลุ่ม') + '</div><div id="glegend" class="row" style="margin-top:6px"></div>';
+  }
+  bar.innerHTML = h;
+  var q = $('#q', bar);
+  if (q) q.oninput = function () { B.search = q.value; applyFilter(); };
+  $$('[data-item]', bar).forEach(function (x) { x.onclick = function () { B.itemId = x.dataset.item; renderBar(); renderCards(); }; });
+  $$('[data-gs]', bar).forEach(function (x) { x.onclick = function () { B.groupId = x.dataset.gs; renderBar(); renderCards(); }; });
+  $$('[data-f]', bar).forEach(function (x) { x.onclick = function () { B.filter = B.filter === x.dataset.f ? '' : x.dataset.f; renderBar(); applyFilter(); }; });
+  if (B.mode === 'pick') {
+    $('#pOnly').onchange = function () { B.pickOnlyPresent = this.checked; renderCards(); };
+    $('#pNoRep').onchange = function () { B.pickNoRepeat = this.checked; };
+    $('#pickGo').onclick = doPick;
+  }
+  tickClock();
+}
+function countChips() {
+  var m = attMap(), c = { P: 0, L: 0, M: 0, S: 0, B: 0, E: 0, A: 0, '': 0 };
+  B.sv.students.forEach(function (s) { var a = m[s.id]; c[a && a.status ? a.status : '']++; });
+  var keys = ['', 'P', 'L', 'M', 'S', 'B', 'E', 'A'];
+  return keys.filter(function (k) { return c[k] || k === '' || k === 'P'; }).map(function (k) {
+    return '<span class="chip' + (B.filter === k + '_' ? ' on' : '') + '" data-f="' + k + '_"><span class="dot" style="background:' + ST[k].c + '"></span>' + ST[k].t + ' ' + c[k] + '</span>';
+  }).join('');
+}
+
+/* ---------- นาฬิกาเช็คชื่อ (แมนวล) ---------- */
+function tickClock() {
+  var el = $('#clock'); if (!el || !B.state || !sessionOpen()) return;
+  var s = B.state.session, t = now();
+  var html, cls;
+  var l1 = (s.lateMinutes || 15) * 60000, l2 = (s.late2Minutes || 10) * 60000;
+  if (!s.startAt) {
+    cls = 'ph0';
+    html = '<div class="grow">ยังไม่เริ่มจับเวลา <span class="sub" style="color:#fff">(เริ่มเองเมื่อเช็คคนแรก)</span></div><button class="btn sm" onclick="clockStart()">▶ เริ่มเช็คชื่อ</button>';
+  } else {
+    var el0 = t - s.startAt;
+    var onEnd = s.onTimeEndAt || (s.startAt + l1);
+    var phase = t <= onEnd ? 1 : (t > s.startAt + l2 ? 3 : 2);
+    cls = 'ph' + phase;
+    var label = phase === 1 ? 'รอบตรงเวลา' : phase === 2 ? 'ตอนนี้เช็ค = สาย 1' : 'ตอนนี้เช็ค = สาย 2';
+    html = '<span class="t">' + mmss(el0) + '</span><div class="grow"><b>' + label + '</b><div style="font-size:13px">เริ่ม ' + fmtT(s.startAt) +
+      (phase === 1 ? (s.onTimeEndAt ? '' : ' · ตัดรอบเองตอน ' + fmtT(onEnd)) : '') +
+      (phase < 3 ? ' · สาย 2 ตั้งแต่ ' + fmtT(s.startAt + l2) : '') + '</div></div>' +
+      (phase === 1 ? '<button class="btn sm" onclick="clockDone()">✓ เช็คเสร็จ</button>' :
+        (s.boardCode ? '<button class="btn sm" onclick="boardShow()" title="ขึ้นรหัสบนจอ">รหัส <b style="font-size:18px;letter-spacing:2px">' + esc(s.boardCode) + '</b></button>' : '<button class="btn sm" onclick="boardNew(true)">เปิดรหัสบนกระดาน</button>') +
+        (s.onTimeEndAt ? '<button class="btn sm" onclick="clockDone(true)">ยกเลิกปิดรอบ</button>' : ''));
+  }
+  var cid = cls + '|' + html;
+  if (el.dataset.v === cid) return;
+  el.dataset.v = cid; el.className = 'clock ' + cls; el.innerHTML = html;
+}
+function clockStart() { enqueue('startClock', { sessionId: B.sessionId }, applyState); B.state.session.startAt = now(); tickClock(); }
+function clockDone(undoIt) {
+  var go = function () {
+    enqueue('markOnTimeDone', { sessionId: B.sessionId, undo: !!undoIt }, applyState);
+    B.state.session.onTimeEndAt = undoIt ? null : now(); if (!B.state.session.startAt) B.state.session.startAt = now();
+    if (undoIt) B.state.session.boardCode = '';
+    tickClock(); toast(undoIt ? 'ยกเลิกแล้ว' : 'ปิดรอบตรงเวลา — คนมาสายกรอกรหัสบนกระดาน');
+    if (!undoIt) { var q = $('#qrc'); if (q) q.remove(); boardShow(); }
+  };
+  if (undoIt) go(); else confirmBox('เช็คเสร็จแล้ว?', 'หลังจากนี้คนที่เพิ่งมาจะถูกบันทึกเป็น <b>สายรอบ 1</b> และเมื่อเกิน ' + (B.state.session.late2Minutes || 10) + ' นาทีหลังเริ่มเช็คชื่อ จะเป็น <b>สายรอบ 2</b><br>ระบบจะขึ้น <b>รหัสบนกระดาน</b> ให้คนมาสายกรอก', 'ยืนยัน', go);
+}
+
+/* ---------- รหัสบนกระดาน (จอครู) ---------- */
+function boardNew(show) {
+  T('newBoardCode', { sessionId: B.sessionId }).then(function (st) {
+    applyState(st); toast('รหัสใหม่ ' + st.session.boardCode + ' (รหัสเก่าใช้ไม่ได้แล้ว)');
+    if (show && !$('#bcf')) boardShow();
+  }).catch(function (e) { toast(errMsg(e)); });
+}
+function boardShow() {
+  if ($('#bcf')) return;
+  var ov = document.createElement('div'); ov.className = 'qrfull'; ov.id = 'bcf';
+  ov.innerHTML = '<div class="big">' + esc(B.sv.course.name) + ' · ' + esc(B.sv.classroom.name) + '</div><div style="font-size:20px">มาสาย? เปิดแอป แล้วกรอกรหัสนี้</div>' +
+    '<div id="bcCode" style="font-size:min(30vw,200px);font-weight:800;letter-spacing:.12em;line-height:1.1;font-variant-numeric:tabular-nums">····</div>' +
+    '<div id="bcNow" style="font-size:20px"></div><div class="row" style="justify-content:center;font-size:18px"><b id="bcCnt"></b></div>' +
+    '<div class="row"><button class="btn" id="bcHide">ย่อ (กลับไปหน้าการ์ด)</button><button class="btn" id="bcNew">เปลี่ยนรหัส</button></div>';
+  document.body.appendChild(ov);
+  var draw = function () {
+    var s = B.state && B.state.session; if (!s) return;
+    $('#bcCode').textContent = s.boardCode || '····';
+    var late2 = s.startAt && now() > s.startAt + (s.late2Minutes || 10) * 60000;
+    $('#bcNow').innerHTML = s.boardCode ? 'กรอกตอนนี้ = <b>' + (late2 ? 'สาย 2' : 'สาย 1') + '</b>' + (s.startAt && !late2 ? ' · สาย 2 ตั้งแต่ ' + fmtT(s.startAt + (s.late2Minutes || 10) * 60000) : '') : 'กำลังสร้างรหัส…';
+    var am = attMap(), n = B.sv.students.filter(function (x) { return am[x.id] && am[x.id].status; }).length;
+    $('#bcCnt').textContent = 'เช็คแล้ว ' + n + '/' + B.sv.students.length + ' คน';
+  };
+  var iv = setInterval(function () { if (!document.getElementById('bcf')) return clearInterval(iv); draw(); }, 1000);
+  var iv2 = setInterval(function () { if (!document.getElementById('bcf')) return clearInterval(iv2); if (Q.items.length) return; T('sessionState', { sessionId: B.sessionId }).then(applyState).catch(function () { }); }, 5000);
+  $('#bcHide').onclick = function () { ov.remove(); };
+  $('#bcNew').onclick = function () { boardNew(false); };
+  draw();
+}
+function applyState(st) {
+  if (!st || !st.session || !B || st.session.id !== B.sessionId) return;
+  var att = st.attendance.filter(function (a) { return !pending('att:' + a.studentId); });
+  var local = B.state.attendance.filter(function (a) { return pending('att:' + a.studentId); });
+  B.state = { session: st.session, attendance: att.concat(local), behavior: pending('beh') ? B.state.behavior : st.behavior, serverNow: st.serverNow };
+  B.offset = st.serverNow - Date.now();
+  if (B.mode === 'att') { renderCards(); refreshChips(); }
+  else if (B.mode === 'beh') renderCards();
+  tickClock();
+}
+function refreshChips() {
+  var ch = $$('#bar [data-f]'); if (!ch.length) return;
+  ch[0].parentNode.innerHTML = countChips();
+  $$('#bar [data-f]').forEach(function (x) { x.onclick = function () { B.filter = B.filter === x.dataset.f ? '' : x.dataset.f; renderBar(); applyFilter(); }; });
+}
+function pollState() {
+  if (!B || !B.sessionId || !sessionOpen() || document.hidden || Q.items.length) return;
+  if (['att', 'beh'].indexOf(B.mode) < 0) return;
+  T('sessionState', { sessionId: B.sessionId }).then(applyState).catch(function () { });
+}
+
+/* ---------- การ์ด ---------- */
+function curGroupset() { return B.groupsets.filter(function (g) { return g.id === B.groupId; })[0]; }
+function renderCards() {
+  var g = $('#grid'); if (!g) return;
+  var am = attMap(), bm = behMap();
+  var gs = B.mode === 'group' ? curGroupset() : null, gIdx = {};
+  if (gs) gs.groups.forEach(function (gr, i) { gr.members.forEach(function (id) { gIdx[id] = i; }); });
+  var item = (B.mode === 'check' || B.mode === 'score') ? B.items.filter(function (i) { return i.id === B.itemId; })[0] : null;
+  var mk = {};
+  if (item) B.marks.forEach(function (m) { if (m.itemId === item.id && (item.kind === 'score' || m.sessionId === B.sessionId)) mk[m.studentId] = m.value; });
+  var html = '';
+  B.sv.students.forEach(function (s) {
+    var a = am[s.id], stc = a && a.status ? a.status : '';
+    var border = 'var(--N)', label = '', lblBg = 'var(--N)', extra = '', dim = false;
+    if (B.mode === 'att' || B.mode === 'pick') {
+      border = ST[stc].c; label = ST[stc].t + (a && a.time && (stc === 'L' || stc === 'M') ? ' ' + fmtT(a.time) : ''); lblBg = ST[stc].c;
+      if (a && a.by === 'self') extra += '<span class="ic" title="เช็คเองด้วย QR">📱</span>';
+      if (B.mode === 'pick') { dim = !pickEligible(s, am); if (B.picked[s.id]) { label = 'สุ่มแล้ว'; lblBg = '#3a4152'; border = '#3a4152'; } }
+    } else if (B.mode === 'beh') {
+      var p = bm[s.id] || 0; border = p > 0 ? 'var(--P)' : p < 0 ? 'var(--A)' : 'var(--N)';
+      label = p ? (p > 0 ? '+' + p : p) : '–'; lblBg = border;
+      dim = stc && !(stc in { P: 1, L: 1, M: 1 });
+    } else if (item) {
+      var v = mk[s.id];
+      if (item.kind === 'check') { label = v === 1 ? '✓' : v === 0 ? '✗' : '–'; lblBg = v === 1 ? 'var(--P)' : v === 0 ? 'var(--A)' : 'var(--N)'; }
+      else { label = v != null ? v + ' / ' + item.maxScore : '–'; lblBg = v != null ? 'var(--brand)' : 'var(--N)'; }
+      border = lblBg;
+    } else if (B.mode === 'group') {
+      if (gs && gIdx[s.id] != null) { border = GROUP_COLORS[gIdx[s.id] % GROUP_COLORS.length]; label = gs.groups[gIdx[s.id]].name; lblBg = border; } else label = '–';
+    }
+    var pts = bm[s.id] || 0;
+    html += '<div class="sc' + (dim ? ' dim' : '') + '" data-id="' + s.id + '" style="border-color:' + border + '">' +
+      '<span class="no">' + esc(s.no || '') + '</span>' +
+      (B.mode !== 'beh' && pts ? '<span class="pt" style="color:' + (pts > 0 ? 'var(--P)' : 'var(--A)') + '">' + (pts > 0 ? '+' : '') + pts + '</span>' : '') +
+      (s.noPhone ? '<span class="ic" style="bottom:auto;top:18px;right:4px" title="ไม่มีมือถือ">📵</span>' : '') + extra +
+      '<div><div class="nk">' + esc(s.nick || s.firstName) + '</div><div class="fn">' + esc(s.nick ? s.firstName : s.lastName) + '</div></div>' +
+      '<div class="st" style="background:' + lblBg + '">' + esc(label) + '</div></div>';
+  });
+  g.innerHTML = html || '<div class="empty">ยังไม่มีรายชื่อนักเรียนในห้องนี้ <br><br><button class="btn pri" onclick="tClassroom(B.sv.classroom.id,function(){tSection(B.secId)})">เพิ่มรายชื่อ</button></div>';
+  bindCards();
+  applyFilter();
+  if (B.mode === 'group') groupLegend(gs);
+  var ic = $('#itemCount'); if (ic && item) ic.textContent = 'บันทึกแล้ว ' + Object.keys(mk).length + '/' + B.sv.students.length;
+}
+function applyFilter() {
+  var q = (B.search || '').trim().toLowerCase(), am = attMap();
+  var f = B.mode === 'att' ? B.filter : '';
+  $$('#grid .sc').forEach(function (el) {
+    var s = stu(el.dataset.id), ok = true;
+    if (q) ok = [s.no, s.firstName, s.lastName, s.nick, s.sid].join(' ').toLowerCase().indexOf(q) >= 0 || String(s.no) === q;
+    if (ok && f) { var a = am[s.id]; ok = (a && a.status ? a.status : '') + '_' === f; }
+    el.classList.toggle('hide', !ok);
+  });
+}
+function stu(id) { return B.sv.students.filter(function (s) { return s.id === id; })[0]; }
+function bindCards() {
+  $$('#grid .sc').forEach(function (el) {
+    var timer = null, long = false, sx = 0, sy = 0;
+    el.addEventListener('pointerdown', function (e) {
+      long = false; sx = e.clientX; sy = e.clientY;
+      timer = setTimeout(function () { long = true; if (navigator.vibrate) navigator.vibrate(20); cardLong(el.dataset.id); }, 480);
+    });
+    el.addEventListener('pointermove', function (e) { if (timer && (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10)) { clearTimeout(timer); timer = null; } });
+    el.addEventListener('pointerup', function () { if (timer) { clearTimeout(timer); timer = null; if (!long) cardTap(el.dataset.id); } });
+    el.addEventListener('pointercancel', function () { clearTimeout(timer); timer = null; });
+    el.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  });
+}
+function cardTap(id) {
+  if (B.mode === 'att') {
+    if (!sessionOpen() && !B.state) return;
+    var a = attMap()[id], cur = a && a.status ? a.status : '';
+    var next = !cur ? 'AUTO' : (cur === 'P' || cur === 'L' || cur === 'M') ? 'B' : '';
+    setAtt(id, next);
+  } else if (B.mode === 'beh') addBeh([id], 1, 'ดี');
+  else if (B.mode === 'check' && B.itemId) {
+    var v = markOf(id); setMark(id, v === 1 ? 0 : v === 0 ? null : 1);
+  } else if (B.mode === 'score' && B.itemId) scorePad(id);
+  else if (B.mode === 'group') moveGroup(id);
+}
+function cardLong(id) {
+  var s = stu(id);
+  if (B.mode === 'att') {
+    if (!B.state) return;
+    modal('<h3>' + esc((s.no ? s.no + '. ' : '') + s.firstName + ' ' + s.lastName) + (s.nick ? ' (' + esc(s.nick) + ')' : '') + '</h3><div class="opts">' +
+      ST_ORDER.map(function (k) { return '<div class="opt" data-s="' + k + '"><span class="dot" style="background:' + ST[k].c + '"></span>' + ST[k].t + '</div>'; }).join('') +
+      '<div class="opt" data-s="">ล้าง</div></div><div class="row" style="margin-top:6px"><button class="btn grow" data-b="1">+1 พฤติกรรม</button><button class="btn grow" data-b="-1">−1 พฤติกรรม</button></div>', function (el) {
+        $$('[data-s]', el).forEach(function (o) { o.onclick = function () { closeModal(); setAtt(id, o.dataset.s, true); }; });
+        $$('[data-b]', el).forEach(function (o) { o.onclick = function () { closeModal(); behReason([id], Number(o.dataset.b)); }; });
+      });
+  } else if (B.mode === 'beh') {
+    modal('<h3>' + esc(s.nick || s.firstName) + '</h3><div class="row"><button class="btn grow" data-p="1">+1</button><button class="btn grow" data-p="-1">−1</button><button class="btn grow" data-p="-2">−2</button></div>', function (el) {
+      $$('[data-p]', el).forEach(function (o) { o.onclick = function () { behReason([id], Number(o.dataset.p)); }; });
+    });
+  } else if (B.mode === 'score' || B.mode === 'check') { if (B.itemId) setMark(id, null); }
+}
+
+/* ---------- เช็คชื่อ ---------- */
+function setAtt(id, status, manual) {
+  var a = attMap()[id], prev = a ? { status: a.status, time: a.time } : { status: '', time: null };
+  var t = now();
+  if (!B.state.session.startAt && sessionOpen()) { B.state.session.startAt = t; }
+  var s = B.state.session, st = status;
+  if (st === 'AUTO') {
+    var onEnd = s.onTimeEndAt || ((s.startAt || t) + (s.lateMinutes || 15) * 60000);
+    st = !sessionOpen() ? 'P' : t <= onEnd ? 'P' : (t > s.startAt + (s.late2Minutes || 10) * 60000 ? 'M' : 'L');
+  }
+  B.undo.push({ type: 'att', id: id, prev: prev });
+  var rec = { id: a ? a.id : 'tmp', sessionId: B.sessionId, studentId: id, status: st, time: st ? t : null, by: 'teacher' };
+  B.state.attendance = B.state.attendance.filter(function (x) { return x.studentId !== id; }).concat([rec]);
+  enqueue('setAttendance', { sessionId: B.sessionId, studentId: id, status: sessionOpen() ? status : st, time: status === 'AUTO' && sessionOpen() ? null : (st ? t : null) }, function (r) {
+    if (!pending('att:' + id)) { B.state.attendance = B.state.attendance.filter(function (x) { return x.studentId !== id; }).concat([r]); renderCards(); }
+  }, 'att:' + id);
+  renderCards(); refreshChips(); tickClock();
+}
+function undo() {
+  var u = B.undo.pop();
+  if (!u) return toast('ไม่มีอะไรให้ย้อน');
+  if (u.type === 'att') {
+    B.state.attendance = B.state.attendance.filter(function (x) { return x.studentId !== u.id; });
+    if (u.prev.status) B.state.attendance.push({ studentId: u.id, status: u.prev.status, time: u.prev.time });
+    enqueue('setAttendance', { sessionId: B.sessionId, studentId: u.id, status: u.prev.status, time: u.prev.time }, null, 'att:' + u.id);
+    toast('ย้อนแล้ว');
+  } else if (u.type === 'beh') {
+    B.state.behavior = B.state.behavior.filter(function (x) { return x.batchId !== u.batch; });
+    var doRemove = function (batchId) { enqueue('removeBehavior', { batchId: batchId }, null, 'beh'); };
+    if (u.real) doRemove(u.real); else u.onReal = doRemove;
+    toast('ย้อนคะแนนพฤติกรรมแล้ว');
+  }
+  renderCards(); refreshChips();
+}
+function closeS() {
+  var am = attMap(), n = B.sv.students.filter(function (s) { return !(am[s.id] && am[s.id].status); }).length;
+  confirmBox('ปิดคาบ', n ? 'ยังไม่ได้เช็ค <b>' + n + ' คน</b> จะถูกบันทึกเป็น <b style="color:var(--A)">ขาด</b>' : 'เช็คครบทุกคนแล้ว', 'ปิดคาบ', function () {
+    var wait = function () { if (Q.items.length) return setTimeout(wait, 400); T('closeSession', { sessionId: B.sessionId }).then(function (r) { toast('ปิดคาบแล้ว' + (r.absent ? ' · ขาด ' + r.absent + ' คน' : '')); tSection(B.secId, 'sum'); }).catch(function (e) { toast(errMsg(e)); }); };
+    wait();
+  });
+}
+function moreS() {
+  modal('<h3>ตัวเลือกคาบนี้</h3><div class="list">' +
+    '<div class="it" id="m1">⏱ ตั้งเวลาสาย (ตอนนี้ ตัดรอบเอง ' + (B.state.session.lateMinutes || 15) + ' นาที · สาย 2 หลัง ' + (B.state.session.late2Minutes || 10) + ' นาที)</div>' +
+    '<div class="it" id="m2" style="color:var(--A)">✕ งดคาบ (ครูติดราชการ/ไม่มีการสอน) — ไม่นับเวลาเรียน</div></div>', function (el) {
+      $('#m1', el).onclick = function () {
+        form('ตั้งเวลาสายของห้องนี้', [
+          { k: 'lateMinutes', label: 'ถ้าไม่กด "เช็คเสร็จ" ระบบตัดรอบตรงเวลาเองหลังเริ่ม (นาที)', type: 'number', value: B.sv.section.lateMinutes || 15 },
+          { k: 'late2Minutes', label: 'สายรอบ 2 เมื่อเกินกี่นาทีหลังเริ่มเช็คชื่อ', type: 'number', value: B.sv.section.late2Minutes || 10 }
+        ], function (v) {
+          var sec = B.sv.section; v.id = sec.id; v.courseId = sec.courseId; v.classroomId = sec.classroomId;
+          return T('saveSection', v).then(function (r) { B.sv.section = r; toast('บันทึกแล้ว มีผลตั้งแต่คาบถัดไป'); });
+        });
+      };
+      $('#m2', el).onclick = function () {
+        confirmBox('งดคาบ', 'คาบนี้จะไม่นับในเวลาเรียน', 'งดคาบ', function () { T('cancelSession', { sessionId: B.sessionId }).then(function () { toast('งดคาบแล้ว'); tSection(B.secId); }); }, true);
+      };
+    });
+}
+function reopenS() { T('reopenSession', { sessionId: B.sessionId }).then(function () { boardInit(B.sessionId); }).catch(function (e) { toast(errMsg(e)); }); }
+
+/* ---------- QR เช็คชื่อ ---------- */
+function qrOpen() {
+  var s = B.state.session;
+  var isOpen = s.checkinOpenAt && now() <= s.checkinOpenAt + (s.checkinMinutes || 0) * 60000;
+  if (isOpen) return qrShow();
+  modal('<h3>เปิดให้นักเรียนสแกนเช็คชื่อ</h3><p class="sub">เปิดรับกี่นาที (หลังจากนั้นนักเรียนต้องให้ครูเช็คให้)</p><div class="opts">' +
+    [3, 5, 10, 15, 20].map(function (m) { return '<div class="opt" data-m="' + m + '">' + m + ' นาที</div>'; }).join('') + '</div>', function (el) {
+      $$('[data-m]', el).forEach(function (o) {
+        o.onclick = function () {
+          closeModal();
+          T('openCheckin', { sessionId: B.sessionId, minutes: Number(o.dataset.m) }).then(function (st) { applyState(st); qrShow(); }).catch(function (e) { toast(errMsg(e)); });
+        };
+      });
+    });
+}
+function qrShow() {
+  var ov = document.createElement('div'); ov.className = 'qrfull'; ov.id = 'qrc';
+  ov.innerHTML = '<div class="big">' + esc(B.sv.course.name) + ' · ' + esc(B.sv.classroom.name) + '</div><div>สแกนด้วยกล้องมือถือเพื่อเช็คชื่อ</div>' +
+    '<div class="qrbox" id="qc"></div><div class="row" style="justify-content:center;font-size:20px"><b id="qcCnt"></b><span id="qcLeft" class="sub"></span></div>' +
+    '<div class="row"><button class="btn" id="qcHide">ย่อ (กลับไปหน้าการ์ด)</button><button class="btn dan" id="qcStop">ปิดรับ QR</button></div>';
+  document.body.appendChild(ov);
+  var size = Math.min(window.innerWidth - 40, window.innerHeight - 220, 560);
+  var qr = null, nextAt = 0;
+  var refresh = function () {
+    T('qrToken', { sessionId: B.sessionId }).then(function (r) {
+      if (!r.open) { stop(); toast('หมดเวลาเช็คชื่อด้วย QR'); return; }
+      var url = link({ p: 'c', s: B.sessionId, t: r.t });
+      if (!qr) qr = makeQR($('#qc'), url, size); else { qr.clear(); qr.makeCode(url); }
+      $('#qc').dataset.url = url;
+      B.qrClosesAt = r.closesAt; B.offset = r.serverNow - Date.now();
+      nextAt = Date.now() + Math.max(2000, r.msLeft - 1500);
+    }).catch(function () { nextAt = Date.now() + 3000; });
+  };
+  var cnt = function () {
+    var am = attMap(), n = B.sv.students.filter(function (s) { return am[s.id] && am[s.id].status; }).length;
+    $('#qcCnt').textContent = 'เช็คแล้ว ' + n + '/' + B.sv.students.length + ' คน';
+    if (B.qrClosesAt) $('#qcLeft').textContent = ' · เหลือ ' + mmss(B.qrClosesAt - now());
+    if (B.qrClosesAt && now() > B.qrClosesAt) { stop(); toast('หมดเวลาเช็คชื่อด้วย QR'); }
+  };
+  var iv = setInterval(function () { if (!document.getElementById('qrc')) return clearInterval(iv); if (Date.now() >= nextAt) refresh(); cnt(); }, 1000);
+  var iv2 = setInterval(function () { if (!document.getElementById('qrc')) return clearInterval(iv2); T('sessionState', { sessionId: B.sessionId }).then(applyState).catch(function () { }); }, 5000);
+  var stop = function () { clearInterval(iv); clearInterval(iv2); var o = $('#qrc'); if (o) o.remove(); };
+  $('#qcHide').onclick = stop;
+  $('#qcStop').onclick = function () { T('closeCheckin', { sessionId: B.sessionId }).then(function (st) { applyState(st); toast('ปิดรับ QR แล้ว'); }); stop(); };
+  refresh(); cnt();
+}
+
+/* ---------- พฤติกรรม ---------- */
+var REASONS_NEG = ['คุย/เสียงดัง', 'เล่นมือถือ', 'ไม่นำอุปกรณ์', 'ไม่ทำงาน', 'ไม่ตั้งใจเรียน', 'ไม่เคารพข้อตกลง'];
+var REASONS_POS = ['ตั้งใจเรียน', 'ช่วยเพื่อน', 'ตอบคำถาม', 'อาสาทำงาน', 'ทำงานดีเยี่ยม'];
+function behReason(ids, pts, label) {
+  var rs = pts > 0 ? REASONS_POS : REASONS_NEG;
+  modal('<h3>' + (label || (pts > 0 ? '+' : '') + pts + ' คะแนน') + ' — เหตุผล</h3><div class="opts">' + rs.map(function (r) { return '<div class="opt" data-r="' + esc(r) + '">' + esc(r) + '</div>'; }).join('') +
+    '</div><input type="text" id="rr" placeholder="หรือพิมพ์เหตุผลอื่น"><div style="height:10px"></div><button class="btn pri big" id="rok">บันทึก</button>', function (el) {
+      $$('[data-r]', el).forEach(function (o) { o.onclick = function () { closeModal(); addBeh(ids, pts, o.dataset.r); }; });
+      $('#rok', el).onclick = function () { closeModal(); addBeh(ids, pts, $('#rr', el).value.trim()); };
+    });
+}
+function addBeh(ids, pts, reason) {
+  if (!B.state) return toast('เริ่มคาบก่อน');
+  var tmp = 'tmp' + Date.now() + Math.random();
+  var resolved = (ids === 'all') ? allPresentIds() : ids;
+  resolved.forEach(function (id) { B.state.behavior.push({ studentId: id, points: pts, reason: reason, batchId: tmp }); });
+  var u = { type: 'beh', batch: tmp, real: null }; B.undo.push(u);
+  enqueue('addBehavior', { sessionId: B.sessionId, studentIds: ids, points: pts, reason: reason }, function (r) {
+    B.state.behavior.forEach(function (b) { if (b.batchId === tmp) b.batchId = r.batchId; });
+    u.real = r.batchId; u.batch = r.batchId; if (u.onReal) u.onReal(r.batchId);
+  }, 'beh');
+  renderCards();
+  if (ids === 'all' || ids.length > 1) toast((pts > 0 ? '+' : '') + pts + ' ให้ ' + resolved.length + ' คน');
+}
+function allPresentIds() {
+  var am = attMap(), ids = B.sv.students.filter(function (s) { var a = am[s.id]; return a && (a.status === 'P' || a.status === 'L' || a.status === 'M'); }).map(function (s) { return s.id; });
+  if (ids.length) return ids;
+  return B.sv.students.filter(function (s) { var a = am[s.id]; return !(a && a.status); }).map(function (s) { return s.id; });
+}
+function behAll(pts) {
+  var n = allPresentIds().length;
+  behReason('all', pts, (pts > 0 ? '+1 ทั้งห้อง' : '−1 ทั้งห้อง') + ' (' + n + ' คนที่มาเรียน)');
+}
+
+/* ---------- เช็ครายการ / คะแนนเร็ว ---------- */
+function markOf(id) {
+  var it = B.items.filter(function (i) { return i.id === B.itemId; })[0];
+  var m = B.marks.filter(function (x) { return x.itemId === it.id && x.studentId === id && (it.kind === 'score' || x.sessionId === B.sessionId); })[0];
+  return m ? m.value : null;
+}
+function setMark(id, value) {
+  var it = B.items.filter(function (i) { return i.id === B.itemId; })[0];
+  if (it.kind === 'check' && !B.sessionId) return toast('เริ่มคาบก่อน');
+  var sid = it.kind === 'check' ? B.sessionId : '';
+  B.marks = B.marks.filter(function (x) { return !(x.itemId === it.id && x.studentId === id && x.sessionId === sid); });
+  if (value !== null) B.marks.push({ itemId: it.id, studentId: id, sessionId: sid, value: value });
+  enqueue('setMark', { itemId: it.id, sessionId: B.sessionId || '', studentId: id, value: value }, null, 'mark:' + id);
+  renderCards();
+}
+function scorePad(id) {
+  var it = B.items.filter(function (i) { return i.id === B.itemId; })[0], s = stu(id), cur = markOf(id);
+  var nums = []; for (var i = 0; i <= it.maxScore; i++) nums.push(i);
+  modal('<h3>' + esc((s.no ? s.no + '. ' : '') + (s.nick || s.firstName)) + ' · ' + esc(it.name) + '</h3><div class="opts" style="grid-template-columns:repeat(auto-fill,minmax(60px,1fr))">' +
+    nums.map(function (n) { return '<div class="opt" data-n="' + n + '" style="font-size:22px' + (cur === n ? ';background:var(--brand);color:#fff' : '') + '">' + n + '</div>'; }).join('') +
+    '</div><div class="row"><button class="btn grow" data-n="">ล้างคะแนน</button><button class="btn grow" id="nxt">ถัดไป →</button></div>', function (el) {
+      $$('[data-n]', el).forEach(function (o) { o.onclick = function () { closeModal(); setMark(id, o.dataset.n === '' ? null : Number(o.dataset.n)); }; });
+      $('#nxt', el).onclick = function () {
+        var vis = $$('#grid .sc:not(.hide)').map(function (x) { return x.dataset.id; }), i = vis.indexOf(id);
+        closeModal(); if (vis[i + 1]) scorePad(vis[i + 1]);
+      };
+    });
+}
+function newItem(kind) {
+  form(kind === 'check' ? 'หัวข้อเช็ครายการใหม่' : 'หัวข้อคะแนนใหม่', [
+    { k: 'name', label: 'ชื่อหัวข้อ', ph: kind === 'check' ? 'เช่น นำขลุ่ยมา' : 'เช่น ปฏิบัติจังหวะ ครั้งที่ 1' }
+  ].concat(kind === 'score' ? [{ k: 'maxScore', label: 'คะแนนเต็ม', type: 'number', value: 10 }] : [])
+    .concat([{ k: 'allSections', label: 'เพิ่มหัวข้อนี้ให้ทุกห้องที่เรียนวิชานี้', type: 'checkbox', value: true }]),
+    function (v) { v.kind = kind; v.sectionId = B.secId; return T('saveItem', v).then(function (it) { B.items.push(it); B.itemId = it.id; renderBar(); renderCards(); }); });
+}
+function editItem() {
+  var it = B.items.filter(function (i) { return i.id === B.itemId; })[0];
+  form('แก้ไขหัวข้อ', [{ k: 'name', label: 'ชื่อหัวข้อ', value: it.name }].concat(it.kind === 'score' ? [{ k: 'maxScore', label: 'คะแนนเต็ม', type: 'number', value: it.maxScore }] : []),
+    function (v) { v.id = it.id; v.kind = it.kind; return T('saveItem', v).then(function (r) { Object.assign(it, r); renderBar(); renderCards(); }); },
+    '<div style="margin-top:10px"><button class="btn dan sm" id="delIt">ลบหัวข้อ (คะแนนในหัวข้อนี้จะหายด้วย)</button></div>');
+  $('#delIt').onclick = function () { confirmBox('ลบหัวข้อ', 'ลบ "' + esc(it.name) + '" และคะแนนทั้งหมดในหัวข้อนี้', 'ลบ', function () { T('deleteItem', { id: it.id }).then(function () { B.items = B.items.filter(function (x) { return x.id !== it.id; }); B.itemId = null; renderBar(); renderCards(); }); }, true); };
+}
+
+/* ---------- สุ่มชื่อ ---------- */
+function pickEligible(s, am) {
+  if (B.pickOnlyPresent !== false && B.state) { var a = am[s.id], st = a && a.status ? a.status : ''; if (st && 'PLM'.indexOf(st) < 0) return false; }
+  if (B.pickNoRepeat !== false && B.picked[s.id]) return false;
+  return true;
+}
+function doPick() {
+  var am = attMap();
+  var pool = B.sv.students.filter(function (s) { return pickEligible(s, am); });
+  if (!pool.length) return toast('สุ่มครบทุกคนแล้ว กด "ล้าง" เพื่อเริ่มใหม่');
+  var winner = pool[Math.floor(Math.random() * pool.length)];
+  var steps = 14, i = 0;
+  var spin = setInterval(function () {
+    $$('#grid .sc').forEach(function (x) { x.classList.remove('hl'); });
+    var s = i < steps ? pool[Math.floor(Math.random() * pool.length)] : winner;
+    var el = $('#grid .sc[data-id="' + s.id + '"]'); if (el) el.classList.add('hl');
+    if (i++ >= steps) {
+      clearInterval(spin);
+      B.picked[winner.id] = 1;
+      $('#pickRes').innerHTML = '<div class="card"><div class="pickbig">' + esc((winner.no ? winner.no + '. ' : '') + (winner.nick || winner.firstName)) + '</div><div class="sub" style="text-align:center">' + esc(winner.firstName + ' ' + winner.lastName) + '</div></div>';
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(function () { renderCards(); var e2 = $('#grid .sc[data-id="' + winner.id + '"]'); if (e2) e2.classList.add('hl'); }, 900);
+    }
+  }, 90);
+}
+
+/* ---------- แบ่งกลุ่ม ---------- */
+function newGroups() {
+  form('สุ่มแบ่งกลุ่ม', [
+    { k: 'by', label: 'แบ่งตาม', type: 'select', value: 'count', options: [['count', 'จำนวนกลุ่ม'], ['size', 'จำนวนคนต่อกลุ่ม']] },
+    { k: 'n', label: 'จำนวน', type: 'number', value: 5 },
+    { k: 'name', label: 'ชื่อชุดกลุ่ม', value: 'กลุ่มงาน ' + (B.groupsets.length + 1) },
+    { k: 'onlyPresent', label: 'ไม่รวมคนที่ลา/ขาดวันนี้', type: 'checkbox', value: !!B.state },
+    { k: 'mixPhone', label: 'กระจายคนไม่มีมือถือให้อยู่ต่างกลุ่ม', type: 'checkbox', value: true }
+  ], function (v) {
+    var am = attMap();
+    var pool = B.sv.students.filter(function (s) { if (!v.onlyPresent || !B.state) return true; var a = am[s.id]; return !(a && a.status && 'PLM'.indexOf(a.status) < 0); });
+    if (!pool.length) throw new Error('ไม่มีนักเรียนให้แบ่ง');
+    var n = Math.max(1, Number(v.n) || 1), k = v.by === 'size' ? Math.ceil(pool.length / n) : Math.min(n, pool.length);
+    var shuffle = function (a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; };
+    var noP = shuffle(pool.filter(function (s) { return v.mixPhone && s.noPhone; })), rest = shuffle(pool.filter(function (s) { return !(v.mixPhone && s.noPhone); }));
+    var groups = []; for (var i = 0; i < k; i++) groups.push({ name: 'กลุ่ม ' + (i + 1), members: [] });
+    noP.concat(rest).forEach(function (s, i) { groups[i % k].members.push(s.id); });
+    return T('saveGroupset', { sectionId: B.secId, name: v.name, groups: groups }).then(function (r) {
+      B.groupsets.push({ id: r.id, name: r.name, groups: groups, createdAt: r.createdAt }); B.groupId = r.id; renderBar(); renderCards();
+    });
+  });
+}
+function moveGroup(id) {
+  var gs = curGroupset(); if (!gs) return toast('สุ่มกลุ่มก่อน');
+  var cur = -1; gs.groups.forEach(function (g, i) { var j = g.members.indexOf(id); if (j >= 0) { cur = i; g.members.splice(j, 1); } });
+  var next = (cur + 1) % gs.groups.length; gs.groups[next].members.push(id);
+  enqueue('saveGroupset', { id: gs.id, sectionId: B.secId, name: gs.name, groups: gs.groups }, null, 'grp');
+  renderCards();
+}
+function groupLegend(gs) {
+  var el = $('#glegend'); if (!el) return;
+  el.innerHTML = gs ? gs.groups.map(function (g, i) { return '<span class="chip"><span class="dot" style="background:' + GROUP_COLORS[i % GROUP_COLORS.length] + '"></span>' + esc(g.name) + ' · ' + g.members.length + '</span>'; }).join('') : '';
+}
+function groupMenu() {
+  var gs = curGroupset();
+  modal('<h3>' + esc(gs.name) + '</h3><div class="list"><div class="it" id="g1">ดูรายชื่อแต่ละกลุ่ม (ฉายขึ้นจอได้)</div><div class="it" id="g2">เปลี่ยนชื่อชุดกลุ่ม</div><div class="it" id="g3" style="color:var(--A)">ลบชุดกลุ่มนี้</div></div>', function (el) {
+    $('#g1', el).onclick = function () {
+      var h = '<h3>' + esc(gs.name) + '</h3>' + gs.groups.map(function (g, i) {
+        return '<div class="card" style="border-left:6px solid ' + GROUP_COLORS[i % GROUP_COLORS.length] + '"><b>' + esc(g.name) + '</b><div>' + g.members.map(function (id) { var s = stu(id); return s ? esc((s.no ? s.no + '. ' : '') + s.firstName + (s.nick ? ' (' + s.nick + ')' : '')) : ''; }).join('<br>') + '</div></div>';
+      }).join('') + '<button class="btn big" onclick="closeModal()">ปิด</button>';
+      modal(h);
+    };
+    $('#g2', el).onclick = function () { form('เปลี่ยนชื่อ', [{ k: 'name', label: 'ชื่อ', value: gs.name }], function (v) { gs.name = v.name; return T('saveGroupset', { id: gs.id, name: v.name, groups: gs.groups }).then(function () { renderBar(); }); }); };
+    $('#g3', el).onclick = function () { confirmBox('ลบชุดกลุ่ม', esc(gs.name), 'ลบ', function () { T('deleteGroupset', { id: gs.id }); B.groupsets = B.groupsets.filter(function (x) { return x.id !== gs.id; }); B.groupId = B.groupsets.length ? B.groupsets[B.groupsets.length - 1].id : null; renderBar(); renderCards(); }, true); };
+  });
+}
+
+/* ---------- สรุป / ประวัติ / ข้อมูลรายวิชา ---------- */
+function renderSummary() {
+  var b = $('#body'); b.className = '';
+  var sv = B.sv, total = sv.sessions.filter(function (s) { return s.status === 'closed'; }).length;
+  var h = '<div class="row"><div class="sub grow">คาบที่ปิดแล้ว ' + total + ' คาบ · สาย 2 นับเวลาเรียนครึ่งคาบ · แถวสีแดง = เวลาเรียนต่ำกว่า 80% (เสี่ยง มส.)</div><button class="btn sm" id="cp">คัดลอกไป Excel</button></div>';
+  h += '<div class="card scroll"><table class="tbl"><thead><tr><th>ที่</th><th>ชื่อ</th><th>มา</th><th>สาย1</th><th>สาย2</th><th>ลา</th><th>กิจกรรม</th><th>ขาด</th><th>%</th><th>พฤติกรรม</th></tr></thead><tbody>';
+  var rows = [['เลขที่', 'ชื่อ', 'นามสกุล', 'มา', 'สาย1', 'สาย2', 'ลา', 'กิจกรรม', 'ขาด', 'เวลาเรียน%', 'พฤติกรรม']];
+  sv.students.forEach(function (s) {
+    var x = sv.stats[s.id] || {};
+    var risk = x.pct != null && x.pct < 80;
+    h += '<tr class="' + (risk ? 'risk' : '') + '"><td>' + esc(s.no || '') + '</td><td>' + esc(s.firstName + ' ' + s.lastName) + '</td><td>' + (x.P || 0) + '</td><td>' + (x.L || 0) + '</td><td>' + (x.M || 0) + '</td><td>' + ((x.S || 0) + (x.B || 0)) + '</td><td>' + (x.E || 0) + '</td><td>' + (x.A || 0) + '</td><td><b>' + (x.pct == null ? '–' : x.pct) + '</b></td><td>' + (x.behavior || 0) + '</td></tr>';
+    rows.push([s.no, s.firstName, s.lastName, x.P || 0, x.L || 0, x.M || 0, (x.S || 0) + (x.B || 0), x.E || 0, x.A || 0, x.pct == null ? '' : x.pct, x.behavior || 0]);
+  });
+  h += '</tbody></table></div>';
+  /* แบบสำรวจ */
+  var sv2 = sv.surveys, done = Object.keys(sv2).length;
+  var cnt = function (k) { var o = {}; Object.keys(sv2).forEach(function (id) { var v = sv2[id][k] || '-'; o[v] = (o[v] || 0) + 1; }); return Object.keys(o).map(function (v) { return esc(v) + ' ' + o[v]; }).join(' · '); };
+  h += '<div class="card"><b>แบบสำรวจก่อนเรียน</b> <span class="sub">ตอบแล้ว ' + done + '/' + sv.students.length + '</span>' +
+    (done ? '<div style="margin-top:6px">มือถือ: ' + cnt('phone') + '<br>อินเทอร์เน็ตที่บ้าน: ' + cnt('internet') + '</div><details style="margin-top:6px"><summary>ดูคำตอบรายคน</summary>' +
+      sv.students.filter(function (s) { return sv2[s.id]; }).map(function (s) { var a = sv2[s.id]; return '<div style="padding:6px 0;border-bottom:1px solid var(--line)"><b>' + esc(s.no + '. ' + s.firstName) + '</b> · ' + esc(a.phone) + ' · เน็ต ' + esc(a.internet) + '<br><span class="sub">เครื่องดนตรี: ' + esc(a.instruments || '-') + ' · อยากเรียน: ' + esc(a.interest || '-') + '</span></div>'; }).join('') + '</details>' : '') + '</div>';
+  b.innerHTML = h;
+  $('#cp').onclick = function () {
+    var tsv = rows.map(function (r) { return r.join('\t'); }).join('\n');
+    (navigator.clipboard ? navigator.clipboard.writeText(tsv) : Promise.reject()).then(function () { toast('คัดลอกแล้ว วางใน Excel ได้เลย'); })
+      .catch(function () { modal('<h3>คัดลอกข้อความนี้</h3><textarea style="min-height:240px">' + esc(tsv) + '</textarea>'); });
+  };
+}
+function renderHistory() {
+  var b = $('#body'); b.className = '';
+  var ss = B.sv.sessions;
+  b.innerHTML = '<div class="card list">' + (ss.map(function (s) {
+    var c = s.counts;
+    return '<div class="it" data-s="' + s.id + '"><div class="grow"><b>' + esc(fmtDS(s.date)) + '</b> <span class="sub">' + fmtT(s.startAt) + '</span><div class="sub">มา ' + c.P + ' · สาย ' + (c.L + c.M) + ' · ลา ' + (c.S + c.B) + ' · ขาด ' + c.A + '</div></div>' +
+      (s.status === 'open' ? '<span class="chip" style="background:#dff5e7">กำลังสอน</span>' : s.status === 'cancelled' ? '<span class="chip">งดคาบ</span>' : '') + ' ›</div>';
+  }).join('') || '<div class="empty">ยังไม่มีคาบเรียน</div>') + '</div>';
+  $$('[data-s]', b).forEach(function (x) {
+    x.onclick = function () {
+      $$('#stabs .tab').forEach(function (t, i) { t.classList.toggle('on', i === 0); });
+      B.mode = 'att'; boardInit(x.dataset.s);
+    };
+  });
+}
+function renderInfo() {
+  var b = $('#body'); b.className = '';
+  var c = B.sv.course;
+  b.innerHTML = '<div class="sub">นักเรียนเห็นข้อมูลนี้ในแอป (ใช้ร่วมกันทุกห้องของวิชานี้)</div>' +
+    '<label class="f">โครงสร้างรายวิชา / หน่วยการเรียนรู้</label><textarea id="i1" style="min-height:160px">' + esc(c.infoStructure) + '</textarea>' +
+    '<label class="f">ข้อตกลงในชั้นเรียน</label><textarea id="i2" style="min-height:200px">' + esc(c.infoRules) + '</textarea>' +
+    '<label class="f">เกณฑ์การให้คะแนน</label><textarea id="i3" style="min-height:120px">' + esc(c.infoGrading) + '</textarea>' +
+    '<div style="height:12px"></div><button class="btn pri big" id="isv">บันทึก</button>' +
+    '<div class="card"><b>ลิงก์ QR เข้าระบบของห้องนี้</b><div style="height:8px"></div><button class="btn" id="jq">▦ แสดง QR เข้าระบบ</button> <button class="btn" id="mr">จัดการรายชื่อ</button></div>';
+  $('#isv').onclick = function () {
+    var btn = this; btn.disabled = true;
+    T('saveCourse', { id: c.id, name: c.name, code: c.code, color: c.color, infoStructure: $('#i1').value, infoRules: $('#i2').value, infoGrading: $('#i3').value })
+      .then(function (r) { B.sv.course = r; toast('บันทึกแล้ว'); btn.disabled = false; }).catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+  };
+  $('#jq').onclick = function () { joinQR(B.sv.classroom.id, B.sv.classroom.name); };
+  $('#mr').onclick = function () { tClassroom(B.sv.classroom.id, function () { tSection(B.secId, 'info'); }); };
+}
+
+/* =========================================================
+   ===================== STUDENT ===========================
+   ========================================================= */
+function sLanding() {
+  app('<div class="res"><div style="font-size:56px">🎵</div><h2>ระบบวิชาเรียน</h2><p>สแกน QR ของห้องเรียนเพื่อเข้าสู่ระบบ</p><p class="sub" style="margin-top:40px"><a href="' + esc(link({ p: 'teacher' })) + '">สำหรับครู</a></p></div>');
+}
+/* เลือกชื่อ + PIN ; after(): ทำต่อหลังล็อกอิน */
+function sJoin(classroomId, after) {
+  app('<div class="top"><h1>เข้าสู่ระบบ</h1></div><div id="body" class="empty">กำลังโหลดรายชื่อ…</div>');
+  call('classroomPublic', { classroomId: classroomId }).then(function (r) {
+    var b = $('#body'); b.className = '';
+    b.innerHTML = '<div class="card"><b>ห้อง ' + esc(r.classroom.name) + '</b><div class="sub">แตะชื่อของตัวเอง</div><div style="height:8px"></div><input type="search" id="q" placeholder="ค้นหาเลขที่หรือชื่อ"></div><div class="card list" id="ls"></div>';
+    var draw = function () {
+      var q = $('#q').value.trim();
+      $('#ls').innerHTML = r.students.filter(function (s) { return !q || String(s.no) === q || (s.firstName + s.lastName + s.nick).indexOf(q) >= 0; }).map(function (s) {
+        return '<div class="it" data-id="' + s.id + '"><b style="width:30px;color:var(--muted)">' + esc(s.no || '') + '</b><div class="grow">' + esc(s.firstName + ' ' + s.lastName) + (s.nick ? ' <span class="sub">(' + esc(s.nick) + ')</span>' : '') + '</div>' + (s.hasPin ? '' : '<span class="chip" style="background:#fff3d6">ครั้งแรก</span>') + '</div>';
+      }).join('') || '<div class="empty">ไม่พบชื่อ ให้แจ้งครู</div>';
+      $$('#ls .it').forEach(function (x) { x.onclick = function () { sPin(r.students.filter(function (s) { return s.id === x.dataset.id; })[0], classroomId, after); }; });
+    };
+    $('#q').oninput = draw; draw();
+  }).catch(function (e) { $('#body').textContent = errMsg(e); });
+}
+function sPin(s, classroomId, after) {
+  var first = !s.hasPin;
+  app('<div class="top"><button class="btn sm" id="bk">←</button><h1>' + esc(s.firstName) + '</h1></div><div class="card" style="max-width:420px;margin:20px auto;text-align:center">' +
+    (first ? '<label class="f" style="text-align:left">ชื่อเล่น</label><input type="text" id="nk" maxlength="20" autocomplete="off" placeholder="ชื่อเล่นของเรา" value="' + esc(s.nick || '') + '"><div style="height:10px"></div>' : '') +
+    '<h3>' + (first ? 'ตั้ง PIN 4 หลัก (จำไว้ใช้ทุกครั้ง)' : 'ใส่ PIN 4 หลัก') + '</h3>' +
+    '<input type="password" id="p1" class="pin" inputmode="numeric" maxlength="4" autocomplete="off">' +
+    (first ? '<label class="f">ใส่ PIN อีกครั้ง</label><input type="password" id="p2" class="pin" inputmode="numeric" maxlength="4" autocomplete="off">' : '') +
+    '<div style="height:12px"></div><button class="btn pri big" id="go">ยืนยัน</button><p class="sub">ลืม PIN? แจ้งครูให้รีเซ็ต</p></div>');
+  $('#bk').onclick = function () { sJoin(classroomId, after); };
+  (first ? $('#nk') : $('#p1')).focus();
+  $('#go').onclick = function () {
+    var p = $('#p1').value, nk = first ? $('#nk').value.trim() : '';
+    if (first && !nk) return toast('ใส่ชื่อเล่นก่อน');
+    if (!/^\d{4}$/.test(p)) return toast('PIN ต้องเป็นตัวเลข 4 หลัก');
+    if (first && p !== $('#p2').value) return toast('PIN สองช่องไม่ตรงกัน');
+    var btn = this; btn.disabled = true;
+    call('studentLogin', { studentId: s.id, pin: p, nick: nk }).then(function (r) {
+      S.sTok = r.token; ls('sTok', r.token);
+      if (after) after(); else sHome();
+    }).catch(function (e) { toast(errMsg(e)); btn.disabled = false; });
+  };
+}
+function sLogout() { S.sTok = null; ls('sTok', null); sLanding(); }
+
+var SH = null;
+function sHome() {
+  app('<div class="top"><h1>ระบบวิชาเรียน</h1><button class="btn sm" onclick="sLogout()">ออก</button></div><div id="body" class="empty">กำลังโหลด…</div>');
+  SX('studentHome').then(function (r) {
+    SH = r;
+    var st = r.student, b = $('#body'); b.className = '';
+    var h = '<div class="card"><div style="font-size:20px;font-weight:700">สวัสดี ' + esc(st.nick || st.firstName) + '</div><div class="sub">' + esc(st.firstName + ' ' + st.lastName) + ' · ห้อง ' + esc(r.classroom.name) + ' · เลขที่ ' + esc(st.no || '') + '</div></div>';
+    r.courses.forEach(function (c) {
+      if (c.boardOpen) h += '<div class="card" style="background:#fff3d6;cursor:pointer" onclick="sBoard()"><b>⏱ มาสาย? กรอกรหัสบนกระดาน</b><div class="sub">' + esc(c.name) + ' · ดูรหัส 4 หลักบนจอครู แล้วแตะที่นี่</div></div>';
+    });
+    if (!r.surveyDone) h +='<div class="card" style="background:#fff8e5;cursor:pointer" onclick="sSurvey()"><b>📝 ทำแบบสำรวจก่อนเรียน</b><div class="sub">ใช้เวลา 1 นาที แตะเพื่อเริ่ม</div></div>';
+    r.courses.forEach(function (c, i) {
+      var p = c.stats.pct, col = p == null ? 'var(--N)' : p < 80 ? 'var(--A)' : 'var(--P)';
+      h += '<div class="card" style="cursor:pointer;border-left:6px solid ' + esc(c.color) + '" onclick="sCourse(' + i + ')"><div class="row"><b class="grow">' + esc(c.name) + '</b><span>›</span></div>' +
+        '<div class="sub">เวลาเรียน ' + (p == null ? 'ยังไม่มีข้อมูล' : p + '%') + ' · มา ' + (c.stats.P + c.stats.L + c.stats.M) + '/' + c.stats.total + ' คาบ</div>' +
+        '<div class="bar-pct"><i style="width:' + (p || 0) + '%;background:' + col + '"></i></div></div>';
+    });
+    if (!r.courses.length) h += '<div class="card empty">ยังไม่มีรายวิชา</div>';
+    h += '<details class="card"><summary>วิธีเพิ่มแอปไว้หน้าจอหลัก</summary><p><b>iPhone:</b> กดปุ่มแชร์ (สี่เหลี่ยมมีลูกศร) → "เพิ่มไปยังหน้าจอโฮม"<br><b>Android:</b> กด ⋮ มุมขวาบน → "เพิ่มลงในหน้าจอหลัก"</p></details>';
+    b.innerHTML = h;
+  }).catch(function (e) { if (errMsg(e) === 'AUTH') return sLanding(); $('#body').textContent = errMsg(e); });
+}
+function sCourse(i, tab) {
+  var c = SH.courses[i]; tab = tab || 'info';
+  var h = '<div class="top"><button class="btn sm" onclick="sHome()">←</button><h1>' + esc(c.name) + '</h1></div><div class="tabs">' +
+    [['info', 'ข้อมูลรายวิชา'], ['att', 'การเข้าเรียนของฉัน']].map(function (t) { return '<button class="tab' + (t[0] === tab ? ' on' : '') + '" onclick="sCourse(' + i + ',\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>';
+  if (tab === 'info') {
+    h += '<div class="card"><b>โครงสร้างรายวิชา</b><div class="pre">' + esc(c.infoStructure) + '</div></div>' +
+      '<div class="card"><b>ข้อตกลงในชั้นเรียน</b><div class="pre">' + esc(c.infoRules) + '</div></div>' +
+      '<div class="card"><b>เกณฑ์การให้คะแนน</b><div class="pre">' + esc(c.infoGrading) + '</div></div>';
+  } else {
+    var s = c.stats;
+    h += '<div class="card"><div style="font-size:28px;font-weight:700">' + (s.pct == null ? '–' : s.pct + '%') + '</div><div class="sub">เวลาเรียน (ต้องไม่ต่ำกว่า 80%)</div>' +
+      '<div class="row" style="margin-top:8px">' + ['P', 'L', 'M', 'S', 'B', 'E', 'A'].filter(function (k) { return s[k]; }).map(function (k) { return '<span class="pill" style="background:' + ST[k].c + '">' + ST[k].t + ' ' + s[k] + '</span>'; }).join('') + '</div></div>';
+    h += '<div class="card list">' + (c.history.map(function (x) {
+      var k = x.status || '';
+      return '<div class="it" style="cursor:default"><div class="grow">' + esc(fmtDS(x.date)) + (x.open ? ' <span class="sub">(กำลังเรียน)</span>' : '') + '</div>' +
+        (x.behavior ? '<span class="sub">' + (x.behavior > 0 ? '+' : '') + x.behavior + '</span>' : '') +
+        '<span class="pill" style="background:' + ST[k].c + '">' + ST[k].t + (x.time && (k === 'L' || k === 'M') ? ' ' + fmtT(x.time) : '') + '</span></div>';
+    }).join('') || '<div class="empty">ยังไม่มีคาบเรียน</div>') + '</div>';
+  }
+  app(h);
+}
+function sSurvey() {
+  var q = function (k, label, opts) {
+    return '<label class="f">' + label + '</label><div class="opts">' + opts.map(function (o) { return '<div class="opt" data-q="' + k + '" data-v="' + esc(o) + '">' + esc(o) + '</div>'; }).join('') + '</div>';
+  };
+  app('<div class="top"><button class="btn sm" onclick="sHome()">←</button><h1>แบบสำรวจก่อนเรียน</h1></div><div class="card">' +
+    q('phone', '1. มีมือถือที่ใช้ในห้องเรียนได้ไหม', ['มีของตัวเอง', 'ใช้ร่วมกับคนในบ้าน', 'ไม่มี']) +
+    q('internet', '2. มีอินเทอร์เน็ตที่บ้านไหม', ['มี', 'บางครั้ง', 'ไม่มี']) +
+    '<label class="f">3. เล่นเครื่องดนตรีอะไรได้บ้าง (ไม่มีก็ได้)</label><input type="text" id="ins" placeholder="เช่น กีตาร์ ขลุ่ย ร้องเพลง">' +
+    '<label class="f">4. อยากเรียนอะไรในวิชานี้</label><input type="text" id="int">' +
+    '<div style="height:14px"></div><button class="btn pri big" id="sv">ส่งแบบสำรวจ</button></div>');
+  var ans = {};
+  $$('[data-q]').forEach(function (o) {
+    o.onclick = function () {
+      ans[o.dataset.q] = o.dataset.v;
+      $$('[data-q="' + o.dataset.q + '"]').forEach(function (x) { x.style.background = x === o ? 'var(--brand)' : '#fff'; x.style.color = x === o ? '#fff' : ''; });
+    };
+  });
+  $('#sv').onclick = function () {
+    if (!ans.phone || !ans.internet) return toast('ตอบข้อ 1 และ 2 ก่อน');
+    ans.instruments = $('#ins').value.trim(); ans.interest = $('#int').value.trim();
+    var b = this; b.disabled = true;
+    SX('submitSurvey', { answers: ans }).then(function () { toast('ส่งแล้ว ขอบคุณ'); sHome(); }).catch(function (e) { toast(errMsg(e)); b.disabled = false; });
+  };
+}
+
+/* ---------- เช็คชื่อด้วย QR ---------- */
+function sCheckinStart(sessionId, t) {
+  app('<div class="res"><h2>กำลังตรวจสอบ QR…</h2></div>');
+  call('checkinTicket', { sessionId: sessionId, t: t }).then(function (tk) {
+    var go = function () { sDoCheckin(tk); };
+    if (S.sTok) go();
+    else sJoin(tk.classroomId, go);
+  }).catch(function (e) { sResult(false, errMsg(e)); });
+}
+function sDoCheckin(tk) {
+  app('<div class="res"><h2>กำลังเช็คชื่อ…</h2></div>');
+  SX('checkin', { sessionId: tk.sessionId, ticket: tk.ticket, issuedAt: tk.issuedAt }).then(function (r) {
+    sResult(true, (r.already ? 'เช็คชื่อไว้แล้ว: ' : '') + ST[r.status].t + ' · ' + fmtT(r.time), r.status, tk.courseName + ' · ' + tk.classroomName);
+  }).catch(function (e) {
+    var m = errMsg(e);
+    if (m === 'AUTH') return sJoin(tk.classroomId, function () { sDoCheckin(tk); });
+    if (m.indexOf('ห้องอื่น') >= 0) return sResult(false, m, null, null, true, tk);
+    sResult(false, m);
+  });
+}
+/* ---------- รหัสบนกระดาน (คนมาสาย) ---------- */
+function sBoard() {
+  app('<div class="top"><button class="btn sm" onclick="sHome()">←</button><h1>รหัสบนกระดาน</h1></div><div class="card" style="max-width:420px;margin:20px auto;text-align:center">' +
+    '<h3>กรอกรหัส 4 หลักที่อยู่บนจอครู</h3><input type="text" id="bc" class="pin" inputmode="numeric" maxlength="4" autocomplete="off">' +
+    '<div style="height:12px"></div><button class="btn pri big" id="go">ส่งรหัส</button><p class="sub">ถ้ารหัสไม่ผ่าน ให้ดูรหัสล่าสุดบนจอ ครูอาจเพิ่งเปลี่ยน</p></div>');
+  var inp = $('#bc'); inp.focus();
+  inp.oninput = function () { inp.value = inp.value.replace(/\D/g, '').slice(0, 4); };
+  inp.onkeydown = function (e) { if (e.key === 'Enter') $('#go').click(); };
+  $('#go').onclick = function () {
+    var code = inp.value;
+    if (!/^\d{4}$/.test(code)) return toast('ใส่ตัวเลขให้ครบ 4 หลัก');
+    var btn = this; btn.disabled = true;
+    SX('boardCheckin', { code: code }).then(function (r) {
+      sResult(true, (r.already ? 'เช็คชื่อไว้แล้ว: ' : '') + ST[r.status].t + ' · ' + fmtT(r.time), r.status, r.courseName);
+    }).catch(function (e) {
+      if (errMsg(e) === 'AUTH') return sLanding();
+      toast(errMsg(e), 3500); btn.disabled = false; inp.value = ''; inp.focus();
+    });
+  };
+}
+function sResult(ok, msg, status, sub, switchUser, tk) {
+  var col = ok ? ST[status || 'P'].c : 'var(--A)';
+  app('<div class="res"><div class="ok" style="background:' + col + '">' + (ok ? '✓' : '!') + '</div><h2>' + esc(msg) + '</h2>' + (sub ? '<p class="sub">' + esc(sub) + '</p>' : '') +
+    (switchUser ? '<button class="btn" id="sw">ไม่ใช่ฉัน / เปลี่ยนผู้ใช้</button><div style="height:10px"></div>' : '') +
+    '<button class="btn pri" onclick="sHome()">ไปหน้าหลัก</button></div>');
+  if (switchUser) $('#sw').onclick = function () { S.sTok = null; ls('sTok', null); sJoin(tk.classroomId, function () { sDoCheckin(tk); }); };
+}
+
+start();
+</script>
+</body>
+</html>
