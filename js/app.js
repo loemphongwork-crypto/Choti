@@ -1,6 +1,6 @@
 // จุดเริ่มของหน้าเว็บ: อ่าน URL → โหลดหน้าที่ตรงกัน
 import { parse } from './router.js';
-import { store } from './api.js';
+import { store, call } from './api.js';
 import { h, $app } from './ui.js';
 
 const VIEWS = {
@@ -10,11 +10,12 @@ const VIEWS = {
   work: './teacher/work.js',
   assignment: './teacher/work.js',
   settings: './teacher/settings.js',
+  'music-trial': './music/teacher.js',
   'student-home': './student/home.js',
   submit: './student/submit.js',
   join: './student/join.js',
 };
-const TEACHER = new Set(['teacher-home', 'checkin', 'history', 'work', 'assignment', 'settings']);
+const TEACHER = new Set(['teacher-home', 'checkin', 'history', 'work', 'assignment', 'settings', 'music-trial']);
 
 let seq = 0, cleanup = null;
 async function route() {
@@ -36,6 +37,9 @@ async function route() {
     app.replaceChildren(h('div', { class: 'loading' }, 'เปิดหน้านี้ไม่ได้: ' + (e.message || e)));
   }
 }
+
+// ปลุกหลังบ้าน (Apps Script) ทันทีที่เปิดแอป จะได้ไม่ช้าตอนกดปุ่มแรก
+call('teacherStatus', {}).catch(() => {});
 
 window.addEventListener('hashchange', route);
 route();

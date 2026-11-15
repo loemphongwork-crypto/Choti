@@ -2,6 +2,9 @@
 import { T, cacheGet, cacheSet, giveHandoff } from '../api.js';
 import { h, sheet, header, errorBox } from '../ui.js';
 import { fmtClock, clockToMs } from '../period.js';
+import { createQueue, LOCAL } from '../queue.js';
+
+const STORE = LOCAL;
 
 export async function render(app) {
   const body = h('div', { class: 'body pad' });
@@ -16,6 +19,8 @@ export async function render(app) {
     const d = await T('tHome', {});
     cacheSet('tHome', d);
     paint(body, d);
+    // โหลดรายชื่อทุกห้องเก็บไว้ล่วงหน้า → กดเช็คชื่อแล้วการ์ดขึ้นทันที
+    T('allRooms', {}).then((rooms) => { for (const [id, r] of Object.entries(rooms)) cacheSet('room:' + id, r); }).catch(() => {});
   } catch (e) { if (!cached) body.replaceChildren(errorBox(e)); }
 }
 
@@ -83,6 +88,18 @@ function startSheet(sec, room, course) {
   go.onclick = async () => {
     const end = clockToMs(endIn.value, Date.now());
     if (!end || end <= Date.now()) { err.replaceChildren(errorBox('เวลาจบคาบต้องเป็นเวลาหลังจากตอนนี้')); return; }
+    const room = cacheGet('room:' + sec.id);
+    if (room) {
+      // มีรายชื่อในเครื่องแล้ว: เข้าหน้าการ์ดทันที ส่งคำสั่งเริ่มคาบเบื้องหลัง (เน็ตหลุดก็เก็บไว้ส่ง)
+      const args = { sectionId: sec.id, startAt: Date.now(), planEndAt: end, planStartAt: sug && sug.planStartAt ? sug.planStartAt : null };
+      const q = createQueue(STORE, (op) => T(op.name, op.args));
+      q.push({ name: 'startSession', args });
+      q.flush();
+      giveHandoff('cv:' + sec.id, { classroom: room.classroom, course: room.course, students: room.students, session: { id: null, sectionId: sec.id, startAt: args.startAt, planEndAt: end, planStartAt: args.planStartAt, onTimeEndAt: null }, attendance: [], serverNow: Date.now() });
+      sh.close();
+      location.hash = '#/t/c/' + sec.id;
+      return;
+    }
     go.disabled = true; go.textContent = 'กำลังเริ่ม…'; err.replaceChildren();
     try {
       const view = await T('startSession', { sectionId: sec.id, planEndAt: end });

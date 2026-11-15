@@ -19,7 +19,10 @@ async function renderSection(app, sectionId) {
     title: `งาน · ${sv.classroom.name}`, sub: sv.course.name, back: sv.session ? '#/t/c/' + sectionId : '#/t',
     right: h('button', { class: 'pill', style: 'background:#f1f2f5', onclick: async () => (await import('./qr.js')).showRoomQR(sv.classroom) }, '▣ QR ห้อง'),
   }), h('div', { class: 'body pad' }, h('button', { class: 'btn pri big', onclick: () => newSheet(sectionId, load) }, '+ สั่งงาน'), h('div', { style: 'height:10px' }), list));
-  async function load() {
+  let pending = null;
+  async function load(p) {
+    if (p) { pending = p; list.querySelector('.empty')?.remove(); list.prepend(h('div', { class: 'room', style: 'opacity:.6' }, h('div', { class: 'grow' }, h('b', { style: 'font-size:16px' }, p.title), h('small', {}, 'กำลังบันทึก…')))); return; }
+    pending = null;
     try {
       const rows = await T('sectionAssignments', { sectionId });
       list.replaceChildren(...(rows.length ? rows.map((a) => h('button', { class: 'room', onclick: () => { location.hash = '#/t/w/a/' + a.id; } },
@@ -71,11 +74,15 @@ function newSheet(sectionId, onDone) {
   }
   go.onclick = async () => {
     if (!title.value.trim()) { err.replaceChildren(errorBox('ใส่ชื่องาน')); return; }
-    go.disabled = true;
+    // ปิดแผ่นและขึ้นในรายการทันที แล้วบันทึกเบื้องหลัง
+    const args = { sectionId, title: title.value.trim(), dueDays: days, dueTime: time.value || '23:59', maxScore: score.value || undefined };
+    sh.close();
+    onDone(args);
     try {
-      await T('saveAssignment', { sectionId, title: title.value.trim(), dueDays: days, dueTime: time.value || '23:59', maxScore: score.value || undefined });
-      sh.close(); toast('สั่งงานแล้ว'); onDone();
-    } catch (e) { err.replaceChildren(errorBox(e)); go.disabled = false; }
+      await T('saveAssignment', args);
+      toast('สั่งงานแล้ว — นักเรียนเห็นงานนี้แล้ว');
+      onDone();
+    } catch (e) { toast('สั่งงานไม่สำเร็จ: ' + e.message); onDone(); }
   };
   setTimeout(() => title.focus(), 250);
 }

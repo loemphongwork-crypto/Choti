@@ -2,16 +2,20 @@
 import { T, takeHandoff, cacheSet } from '../api.js';
 import { roomInfo } from './room-info.js';
 import { h, sheet, toast, press, header, errorBox } from '../ui.js';
-import { createQueue } from '../queue.js';
+import { createQueue, LOCAL } from '../queue.js';
 import { fmtClock, clockToMs, elapsed, endOf, halfAt } from '../period.js';
 import { LABEL, tapAction, phaseOf, countStatuses, matchStudent, noteArg } from './checkin-state.js';
 
-const STORE = { getItem: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, setItem: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }, removeItem: () => {} };
+const STORE = LOCAL;
 const DOT = { P: 'var(--ok)', L: 'var(--l1)', M: 'var(--l2)', S: 'var(--leave)', E: 'var(--act)', A: 'var(--abs)', '': '#c9ced6' };
 
 const PALETTE = ['#e6553a', '#2f8fdd', '#27a35a', '#d59b00', '#8b5cc7', '#d6457f', '#169c9c', '#5b6ee1', '#c25e00'];
 function initial(st) { return Array.from(String(st.nick || st.firstName || '?').replace(/[ัิ-ฺเ-ไ็-๎]/g, ''))[0] || '?'; }
 function avatarColor(st) { let x = 0; for (const ch of String(st.id)) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return PALETTE[x % PALETTE.length]; }
+
+function pendingStart(sectionId) {
+  try { const op = JSON.parse(localStorage.getItem('q:v1') || '[]').find((o) => o.name === 'startSession' && o.args.sectionId === sectionId); return op ? op.args : null; } catch (e) { return null; }
+}
 
 export async function render(app, { sectionId }) {
   app.append(h('div', { class: 'loading' }, 'กำลังโหลดรายชื่อ…'));
@@ -19,6 +23,11 @@ export async function render(app, { sectionId }) {
   let d = takeHandoff('cv:' + sectionId);
   if (!d) {
     try { d = await T('checkinView', { sectionId }); } catch (e) { app.replaceChildren(errorBox(e)); return; }
+  }
+  if (!d.session) {
+    // กดเริ่มคาบแล้วแต่ยังส่งขึ้นระบบไม่ถึง (เน็ตช้า/หลุด) = ถือว่าเริ่มแล้ว
+    const pend = pendingStart(sectionId);
+    if (pend) d = Object.assign({}, d, { session: { id: null, sectionId, startAt: pend.startAt, planEndAt: pend.planEndAt, planStartAt: pend.planStartAt || null, onTimeEndAt: null }, attendance: [] });
   }
   if (!d.session) { app.replaceChildren(header({ title: d.classroom.name, sub: d.course.name, back: '#/t' }), h('div', { class: 'empty' }, 'ยังไม่ได้เริ่มคาบ — กลับไปหน้าห้องแล้วกด "✓ เช็คชื่อ"')); return; }
   const sv = { classroom: d.classroom, course: d.course, students: d.students };
@@ -37,7 +46,7 @@ export async function render(app, { sectionId }) {
   // การแตะที่ยังค้างในคิว (เช่น เน็ตหลุดแล้วรีเฟรช) ทับข้อมูลจากเซิร์ฟเวอร์
   try {
     JSON.parse(localStorage.getItem('q:v1') || '[]').forEach((op) => {
-      if (op.args.sessionId !== sessionId) return;
+      if (op.args.sessionId !== sessionId && op.args.sectionId !== sectionId) return;
       if (op.name === 'setAttendance' && op.args.studentId) att[op.args.studentId] = { status: op.args.status, note: op.args.note || '' };
       if (op.name === 'markOnTimeDone') session = Object.assign({}, session, { onTimeEndAt: op.args.undo ? null : op.args.clientTime });
     });
@@ -145,7 +154,7 @@ export async function render(app, { sectionId }) {
   }
   paintGrid(); paintHead(); paintSync();
   if (photoOn) { grid.classList.add('photo'); loadPhotos(); }
-  queue.onChange(paintSync);
+  const unsub = queue.onChange(paintSync);
 
   // ---------- การกระทำ ----------
   function setStatus(st, status, note) {
@@ -154,7 +163,7 @@ export async function render(app, { sectionId }) {
     undoBtn.disabled = false;
     const half = status && ['P', 'L', 'M'].includes(status) && isHalf();
     att[st.id] = { status, note: note !== undefined ? note : (half ? `มาเกินครึ่งคาบ (${fmtClock(now())})` : '') };
-    const args = { sessionId, studentId: st.id, status };
+    const args = { sectionId, studentId: st.id, status };
     if (note !== undefined) args.note = note;
     queue.push({ name: 'setAttendance', args });
     paintCard(st); paintHead();
@@ -182,7 +191,7 @@ export async function render(app, { sectionId }) {
     if (!last) return;
     undoBtn.disabled = !undoStack.length;
     att[last.st.id] = last.prev;
-    queue.push({ name: 'setAttendance', args: { sessionId, studentId: last.st.id, status: last.prev.status, note: last.prev.note || '' } });
+    queue.push({ name: 'setAttendance', args: { sectionId, studentId: last.st.id, status: last.prev.status, note: last.prev.note || '' } });
     paintCard(last.st); paintHead(); queue.flush();
     toast('ย้อนแล้ว');
   }
@@ -190,7 +199,7 @@ export async function render(app, { sectionId }) {
   function endRound1() {
     const setRound = (done) => {
       session = Object.assign({}, session, { onTimeEndAt: done ? now() : null });
-      queue.push({ name: 'markOnTimeDone', args: done ? { sessionId } : { sessionId, undo: true } });
+      queue.push({ name: 'markOnTimeDone', args: done ? { sectionId } : { sectionId, undo: true } });
       paintHead(); queue.flush();
     };
     setRound(true);
@@ -205,7 +214,7 @@ export async function render(app, { sectionId }) {
       foot: [h('button', { class: 'btn', onclick: () => sh.close() }, 'ยกเลิก'), h('button', { class: 'btn pri', onclick: async () => {
         const end = clockToMs(endIn.value, session.startAt);
         if (!end || end <= session.startAt) { err.replaceChildren(errorBox('เวลาจบต้องหลังเวลาเริ่ม')); return; }
-        try { const r = await T('setPeriod', { sessionId, planEndAt: end }); session = r.session; paintHead(); tickClock(); sh.close(); }
+        try { const r = await T('setPeriod', { sectionId, planEndAt: end }); session = r.session; paintHead(); tickClock(); sh.close(); }
         catch (e) { err.replaceChildren(errorBox(e)); }
       } }, 'บันทึก')],
     });
@@ -223,8 +232,7 @@ export async function render(app, { sectionId }) {
       await queue.flush();
       if (queue.pending()) { err.replaceChildren(errorBox('ยังมีรายการรอส่ง — ต่ออินเทอร์เน็ตแล้วลองอีกครั้ง')); go.disabled = false; return; }
       try {
-        await T('closeSession', { sessionId });
-        const fin = await T('sessionState', { sessionId });
+        const fin = await T('closeSession', { sectionId });
         sh.close();
         summary(fin.attendance);
       } catch (e) { err.replaceChildren(errorBox(e)); go.disabled = false; }
@@ -256,7 +264,7 @@ export async function render(app, { sectionId }) {
   tickClock();
   const onOnline = () => queue.flush();
   window.addEventListener('online', onOnline);
-  function stop() { clearInterval(t1); clearInterval(t2); clearInterval(t3); window.removeEventListener('online', onOnline); }
+  function stop() { unsub(); clearInterval(t1); clearInterval(t2); clearInterval(t3); window.removeEventListener('online', onOnline); }
   queue.flush();
   return stop;
 }

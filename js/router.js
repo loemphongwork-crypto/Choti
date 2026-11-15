@@ -6,6 +6,7 @@ const ROUTES = [
   ['t/w/a/:assignmentId', 'assignment'],
   ['t/w/:sectionId', 'work'],
   ['t/set', 'settings'],
+  ['t/music', 'music-trial'],
   ['s', 'student-home'],
   ['s/a/:assignmentId', 'submit'],
   ['join/:classroomId', 'join'],
