@@ -8,7 +8,7 @@ export async function render(app) {
   let home, periods;
   try { [home, periods] = await Promise.all([T('tHome', {}), T('getPeriods', {})]); } catch (e) { body.append(errorBox(e)); return; }
   const courses = home.courses.filter((c) => !home.activeTermId || c.termId === home.activeTermId);
-  body.append(periodCard(periods), courseCard(home, courses), importCard(courses), pinCard(home),
+  body.append(periodCard(periods), courseCard(home, courses), importCard(courses), photoCard(), pinCard(home),
     h('button', { class: 'btn big', style: 'margin-top:6px', onclick: () => { store.set('tTok', null); location.hash = '#/t'; window.dispatchEvent(new HashChangeEvent('hashchange')); } }, 'ออกจากระบบครู'));
 }
 
@@ -89,4 +89,17 @@ function pinCard(home) {
     if (!list.children.length) list.append(h('div', { class: 'empty' }, 'ยังไม่มีใครตั้ง PIN'));
   };
   return h('div', { class: 's-card' }, h('h4', {}, 'รีเซ็ต PIN นักเรียน'), h('label', { class: 'field' }, sel), list);
+}
+
+function photoCard() {
+  const out = h('div');
+  return h('div', { class: 's-card' }, h('h4', {}, 'รูปนักเรียน'),
+    h('p', { class: 'hint' }, 'ใส่รูปในโฟลเดอร์ "รูปนักเรียน" ใน Drive ของบัญชีระบบ · ตั้งชื่อไฟล์ให้ขึ้นต้นด้วยรหัสนักเรียน เช่น 17001.jpg หรือ 17001_ก้อง.jpg · ระบบจับคู่ให้เอง แล้วเปิดสวิตช์ "รูป" ในหน้าเช็คชื่อ'),
+    out,
+    h('button', { class: 'btn big', onclick: async (e) => {
+      const b = e.currentTarget; b.disabled = true;
+      try { const r = await T('photoFolder', {}); window.open(r.url, '_blank', 'noopener'); out.replaceChildren(h('a', { href: r.url, target: '_blank', rel: 'noopener' }, 'เปิดโฟลเดอร์รูปนักเรียน')); }
+      catch (x) { out.replaceChildren(errorBox(x)); }
+      b.disabled = false;
+    } }, '📁 เปิดโฟลเดอร์รูปนักเรียน'));
 }

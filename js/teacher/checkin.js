@@ -9,6 +9,10 @@ import { LABEL, tapAction, phaseOf, countStatuses, matchStudent, noteArg } from 
 const STORE = { getItem: (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } }, setItem: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }, removeItem: () => {} };
 const DOT = { P: 'var(--ok)', L: 'var(--l1)', M: 'var(--l2)', S: 'var(--leave)', E: 'var(--act)', A: 'var(--abs)', '': '#c9ced6' };
 
+const PALETTE = ['#e6553a', '#2f8fdd', '#27a35a', '#d59b00', '#8b5cc7', '#d6457f', '#169c9c', '#5b6ee1', '#c25e00'];
+function initial(st) { return Array.from(String(st.nick || st.firstName || '?').replace(/[ัิ-ฺเ-ไ็-๎]/g, ''))[0] || '?'; }
+function avatarColor(st) { let x = 0; for (const ch of String(st.id)) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return PALETTE[x % PALETTE.length]; }
+
 export async function render(app, { sectionId }) {
   app.append(h('div', { class: 'loading' }, 'กำลังโหลดรายชื่อ…'));
   // เพิ่งกดเริ่มคาบ = มีข้อมูลส่งต่อมาแล้ว ไม่ต้องโหลดซ้ำ · ไม่งั้นโหลดครั้งเดียวด้วย checkinView
@@ -47,12 +51,19 @@ export async function render(app, { sectionId }) {
   const timeLine = h('button', { class: 'linkish', style: 'color:var(--mute);font-size:12.5px;padding:0;text-align:left' });
   const phase = h('div', { class: 'phase' });
   const counts = h('div', { class: 'counts' });
+  // สวิตช์ "รูป": แสดงรูปนักเรียนบนการ์ด (ยังไม่มีรูป = ตัวอักษรย่อ)
+  let photoOn = STORE.getItem('photoMode') === '1';
+  const photoBtn = h('button', { class: 'phtog' + (photoOn ? ' on' : ''), title: 'แสดงรูปบนการ์ด', onclick: () => {
+    photoOn = !photoOn; STORE.setItem('photoMode', photoOn ? '1' : '0');
+    photoBtn.classList.toggle('on', photoOn); grid.classList.toggle('photo', photoOn); if (photoOn) loadPhotos();
+  } }, h('span', { class: 'sw' }, h('span', { class: 'knob' })), 'รูป');
+  const countRow = h('div', { class: 'countrow' }, counts, photoBtn);
   const clock = h('div', { class: 'clock', 'aria-live': 'off' });
   const hd = h('div', { class: 'hd' },
     h('div', { class: 'hrow' },
       h('button', { class: 'back', onclick: () => { location.hash = '#/t'; }, 'aria-label': 'ย้อนกลับ' }, '‹'),
       h('div', { class: 'cls' }, h('b', {}, `${sv.classroom.name} · ${sv.course.name}`), timeLine), sync),
-    clock, phase, counts);
+    clock, phase, countRow);
   let wasHalf = null;
   const isHalf = () => now() > halfAt(session);
   function tickClock() {
@@ -82,6 +93,7 @@ export async function render(app, { sectionId }) {
   for (const st of students) {
     const c = h('div', { class: 'card', role: 'button', tabindex: 0 },
       h('span', { class: 'no' }, st.no ?? ''), h('span', { class: 'mark' }),
+      h('div', { class: 'pic', style: 'background:' + avatarColor(st) }, h('span', { class: 'ini' }, initial(st))),
       h('div', { class: 'nick' }, st.nick || st.firstName), h('div', { class: 'nm' }, `${st.firstName} ${st.lastName}`), h('div', { class: 'st' }));
     press(c, () => onTap(st), () => onHold(st));
     cards[st.id] = c;
@@ -94,6 +106,18 @@ export async function render(app, { sectionId }) {
     c.querySelector('.st').textContent = LABEL[a.status] || '';
     c.querySelector('.mark').textContent = a.note ? '⏱' : '';
     c.title = a.note || '';
+  }
+  let photosLoaded = false;
+  async function loadPhotos() {
+    if (photosLoaded) return;
+    photosLoaded = true;
+    try {
+      const map = await T('studentPhotos', { classroomId: sv.classroom.id });
+      for (const [id, src] of Object.entries(map)) {
+        const pic = cards[id] && cards[id].querySelector('.pic');
+        if (pic) pic.replaceChildren(h('img', { src, alt: '' }));
+      }
+    } catch (e) { photosLoaded = false; }
   }
   function paintGrid() { students.forEach((st) => { paintCard(st); cards[st.id].classList.toggle('hide', !matchStudent(st, query)); }); }
   function paintHead() {
@@ -120,6 +144,7 @@ export async function render(app, { sectionId }) {
     sync.textContent = n ? `รอส่ง ${n}` : '✓ บันทึกแล้ว';
   }
   paintGrid(); paintHead(); paintSync();
+  if (photoOn) { grid.classList.add('photo'); loadPhotos(); }
   queue.onChange(paintSync);
 
   // ---------- การกระทำ ----------

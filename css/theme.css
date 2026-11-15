@@ -198,3 +198,23 @@ a{color:var(--pri)}
 .clock.over b{color:var(--abs)}
 .room .btn{padding:8px 10px;font-size:13.5px;flex:none}
 .room .live{display:inline-block;margin-top:2px}
+
+/* ---------- รูปนักเรียนบนการ์ด ---------- */
+.countrow{display:flex;align-items:flex-start;gap:8px;margin-top:8px}
+.countrow .counts{flex:1;margin-top:0}
+.phtog{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#3a4255;padding:1px 0 1px 4px;flex:none;min-height:28px}
+.sw{width:30px;height:18px;border-radius:999px;background:#c9ced6;position:relative;transition:background .2s}
+.sw .knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .2s}
+.phtog.on .sw{background:var(--pri)}
+.phtog.on .sw .knob{left:14px}
+.card .pic{display:none}
+.grid.photo .card{padding:4px 4px 6px;border-style:solid}
+.grid.photo .card:not([class*="s-"]){border:1.5px dashed #c9ced6}
+.grid.photo .card .pic{display:block;width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;position:relative}
+.grid.photo .card .pic img{width:100%;height:100%;object-fit:cover;display:block}
+.grid.photo .card .pic .ini{position:absolute;inset:0;display:grid;place-items:center;font-size:28px;font-weight:700;color:#fff;font-family:"Noto Sans Thai Looped","Noto Sans Thai",sans-serif}
+.grid.photo .card .no{top:6px;left:6px;z-index:1;background:rgba(255,255,255,.92);border-radius:6px;padding:0 4px;font-weight:700;color:var(--ink)}
+.grid.photo .card .mark{z-index:1}
+.grid.photo .card .nick{margin-top:4px;font-size:14.5px}
+.grid.photo .card .nm{display:none}
+.grid.photo .card.s-A .pic{filter:grayscale(1)}
