@@ -40,6 +40,14 @@ async function route() {
 
 // ปลุกหลังบ้าน (Apps Script) ทันทีที่เปิดแอป จะได้ไม่ช้าตอนกดปุ่มแรก
 call('teacherStatus', {}).catch(() => {});
+// มีคำสั่งค้างส่งจากครั้งก่อน (เช่น ปิดคาบตอนเน็ตหลุด) → ส่งต่อทันทีที่เปิดแอป และทุกครั้งที่เน็ตกลับมา
+if (store.get('tTok')) {
+  import('./queue.js').then(({ createQueue, LOCAL }) => import('./api.js').then(({ T }) => {
+    const q = createQueue(LOCAL, (op) => T(op.name, op.args));
+    q.flush();
+    window.addEventListener('online', () => q.flush());
+  })).catch(() => {});
+}
 
 window.addEventListener('hashchange', route);
 route();

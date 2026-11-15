@@ -41,7 +41,7 @@ export function sheet({ title, sub, body, foot }) {
   const close = () => { scrim.classList.remove('on'); sh.classList.remove('on'); setTimeout(() => { scrim.remove(); sh.remove(); }, 250); };
   scrim.onclick = close;
   app.append(scrim, sh);
-  requestAnimationFrame(() => { scrim.classList.add('on'); sh.classList.add('on'); });
+  setTimeout(() => { scrim.classList.add('on'); sh.classList.add('on'); }, 20); // ไม่ใช้ rAF: บางเบราว์เซอร์/แท็บพื้นหลังไม่เรียก
   return { close, el: sh };
 }
 

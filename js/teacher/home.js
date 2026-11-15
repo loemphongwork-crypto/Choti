@@ -25,6 +25,11 @@ export async function render(app) {
 }
 
 function paint(body, d) {
+  // คำสั่งเริ่ม/ปิดคาบที่ยังรอส่งในเครื่อง มีผลกับป้าย "กำลังสอน" ทันที
+  let q = []; try { q = JSON.parse(localStorage.getItem('q:v1') || '[]'); } catch (e) { /* ignore */ }
+  const pend = {};
+  q.forEach((op) => { if (op.name === 'startSession') pend[op.args.sectionId] = 'open'; if (op.name === 'closeSession') pend[op.args.sectionId] = 'closed'; });
+  d = Object.assign({}, d, { sections: d.sections.map((s) => pend[s.id] ? Object.assign({}, s, { openSessionId: pend[s.id] === 'open' ? 'pending' : null }) : s) });
   const rooms = Object.fromEntries(d.classrooms.map((c) => [c.id, c]));
   const courses = d.courses.filter((c) => !d.activeTermId || c.termId === d.activeTermId);
   body.replaceChildren();

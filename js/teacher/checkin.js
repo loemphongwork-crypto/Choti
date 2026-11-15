@@ -13,6 +13,9 @@ const PALETTE = ['#e6553a', '#2f8fdd', '#27a35a', '#d59b00', '#8b5cc7', '#d6457f
 function initial(st) { return Array.from(String(st.nick || st.firstName || '?').replace(/[ัิ-ฺเ-ไ็-๎]/g, ''))[0] || '?'; }
 function avatarColor(st) { let x = 0; for (const ch of String(st.id)) x = (x * 31 + ch.charCodeAt(0)) >>> 0; return PALETTE[x % PALETTE.length]; }
 
+function pendingClose(sectionId) {
+  try { return JSON.parse(localStorage.getItem('q:v1') || '[]').some((o) => o.name === 'closeSession' && o.args.sectionId === sectionId); } catch (e) { return false; }
+}
 function pendingStart(sectionId) {
   try { const op = JSON.parse(localStorage.getItem('q:v1') || '[]').find((o) => o.name === 'startSession' && o.args.sectionId === sectionId); return op ? op.args : null; } catch (e) { return null; }
 }
@@ -23,6 +26,10 @@ export async function render(app, { sectionId }) {
   let d = takeHandoff('cv:' + sectionId);
   if (!d) {
     try { d = await T('checkinView', { sectionId }); } catch (e) { app.replaceChildren(errorBox(e)); return; }
+  }
+  if (pendingClose(sectionId)) {
+    app.replaceChildren(header({ title: d.classroom.name, sub: d.course.name, back: '#/t' }), h('div', { class: 'empty' }, 'ปิดคาบนี้แล้ว — กำลังบันทึกขึ้นระบบ'));
+    return;
   }
   if (!d.session) {
     // กดเริ่มคาบแล้วแต่ยังส่งขึ้นระบบไม่ถึง (เน็ตช้า/หลุด) = ถือว่าเริ่มแล้ว
@@ -234,19 +241,22 @@ export async function render(app, { sectionId }) {
       title: 'ปิดคาบนี้?', sub: c.none ? `ยังไม่เช็ค ${c.none} คน → จะบันทึกเป็น "ขาด"` : 'เช็คครบทุกคนแล้ว',
       body: h('div', {}, err), foot: [h('button', { class: 'btn', onclick: () => sh.close() }, 'ยังก่อน'), go],
     });
-    go.onclick = async () => {
-      go.disabled = true;
-      await queue.flush();
-      if (queue.pending()) { err.replaceChildren(errorBox('ยังมีรายการรอส่ง — ต่ออินเทอร์เน็ตแล้วลองอีกครั้ง')); go.disabled = false; return; }
-      try {
-        const fin = await T('closeSession', { sectionId });
-        sh.close();
-        summary(fin.attendance);
-      } catch (e) { err.replaceChildren(errorBox(e)); go.disabled = false; }
+    // ปิดคาบ: ขึ้นสรุปทันทีจากข้อมูลในเครื่อง แล้วส่ง "ปิดคาบ" ต่อท้ายคิวเบื้องหลัง (ไม่ต้องรอระบบ)
+    go.onclick = () => {
+      const rows = students.map((st) => { const a = att[st.id] || {}; return { studentId: st.id, status: a.status || 'A', note: a.note || '' }; });
+      queue.push({ name: 'closeSession', args: { sectionId } });
+      queue.flush();
+      sh.close();
+      summary(rows);
     };
   }
   function summary(rows) {
     stop();
+    const syncLine = h('div', { class: 'hint', style: 'text-align:center;margin-top:8px' });
+    const paintSyncLine = (n) => { n = n ?? queue.pending(); syncLine.textContent = n ? `กำลังบันทึกขึ้นระบบ… (รอส่ง ${n}) — ปิดแอปได้ ระบบจะส่งต่อเมื่อเปิดครั้งหน้า` : '✓ บันทึกขึ้นระบบแล้ว'; };
+    paintSyncLine();
+    queue.onChange(paintSyncLine);
+    const retry = setInterval(() => { if (queue.pending()) queue.flush(); else clearInterval(retry); }, 5000);
     cacheSet('room:' + sectionId, roomInfo({ classroom: sv.classroom, course: sv.course, students: sv.students, session: null }));
     const by = {};
     rows.forEach((r) => { by[r.studentId] = r; });
@@ -261,7 +271,7 @@ export async function render(app, { sectionId }) {
     app.replaceChildren(header({ title: 'สรุปคาบ', sub: `${sv.classroom.name} · ${sv.course.name}`, back: '#/t' }),
       h('div', { class: 'body' }, h('div', { class: 'sum' }, groups,
         halfList.length ? h('div', { class: 'sg' }, h('div', { class: 'sg-t' }, '⏱ มาเกินครึ่งคาบ', h('span', { class: 'n' }, halfList.length + ' คน')), h('div', { class: 'sg-who' }, halfList.map((x) => `${x.no} ${x.nick || x.firstName}`).join(' · '))) : null),
-      h('div', { class: 'pad' }, h('button', { class: 'btn pri big', onclick: () => { location.hash = '#/t'; } }, 'กลับหน้าห้อง'))));
+      h('div', { class: 'pad' }, h('button', { class: 'btn pri big', onclick: () => { location.hash = '#/t'; } }, 'กลับหน้าห้อง'), syncLine)));
   }
 
   // ---------- จังหวะเวลา ----------
