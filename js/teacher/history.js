@@ -1,13 +1,16 @@
 // ครู: แก้เช็คชื่อย้อนหลัง (ค้นชื่อ → เลือกคาบ → เปลี่ยนสถานะ)
-import { T } from '../api.js';
+import { T, cacheGet, cacheSet } from '../api.js';
+import { roomInfo } from './room-info.js';
 import { h, sheet, toast, header, errorBox, fmtDate } from '../ui.js';
 import { LABEL, matchStudent } from './checkin-state.js';
 
 const TAG = { P: 't-ok', L: 't-l1', M: 't-l2', S: 't-lv', B: 't-lv', E: 't-act', A: 't-abs', '': 't-none' };
 
 export async function render(app, { sectionId }) {
-  let sv;
-  try { sv = await T('sectionView', { sectionId }); } catch (e) { app.append(errorBox(e)); return; }
+  let sv = cacheGet('room:' + sectionId);
+  const fresh = T('checkinView', { sectionId }).then((d) => { const r = roomInfo(d); cacheSet('room:' + sectionId, r); return r; });
+  if (!sv) { try { sv = await fresh; } catch (e) { app.append(errorBox(e)); return; } }
+  fresh.catch(() => {});
   const q = h('input', { placeholder: 'พิมพ์เลขที่ หรือชื่อ', oninput: paint });
   const list = h('div', { class: 's-card' });
   app.append(header({ title: 'แก้เช็คชื่อย้อนหลัง', sub: `${sv.classroom.name} · ${sv.course.name}`, back: '#/t' }),
@@ -20,6 +23,7 @@ export async function render(app, { sectionId }) {
   }
   paint();
   q.focus();
+  fresh.then((r) => { sv = r; paint(); }).catch(() => {});
 
   async function openStudent(st) {
     const box = h('div', {}, h('div', { class: 'loading' }, 'กำลังโหลด…'));

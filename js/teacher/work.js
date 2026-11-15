@@ -1,5 +1,6 @@
 // ครู: งานของห้อง (สั่งงาน + ดูการส่ง)
-import { T } from '../api.js';
+import { T, cacheGet, cacheSet } from '../api.js';
+import { roomInfo } from './room-info.js';
 import { h, sheet, toast, header, errorBox, fmtDate } from '../ui.js';
 import { clockToMs } from '../period.js';
 
@@ -10,10 +11,12 @@ export async function render(app, params, view) {
 
 async function renderSection(app, sectionId) {
   const list = h('div', {}, h('div', { class: 'loading' }, 'กำลังโหลด…'));
-  let sv;
-  try { sv = await T('sectionView', { sectionId }); } catch (e) { app.append(errorBox(e)); return; }
+  let sv = cacheGet('room:' + sectionId);
+  const fresh = T('checkinView', { sectionId }).then((d) => { const r = roomInfo(d); cacheSet('room:' + sectionId, r); return r; });
+  if (!sv) { try { sv = await fresh; } catch (e) { app.append(errorBox(e)); return; } }
+  fresh.catch(() => {});
   app.append(header({
-    title: `งาน · ${sv.classroom.name}`, sub: sv.course.name, back: '#/t',
+    title: `งาน · ${sv.classroom.name}`, sub: sv.course.name, back: sv.session ? '#/t/c/' + sectionId : '#/t',
     right: h('button', { class: 'pill', style: 'background:#f1f2f5', onclick: async () => (await import('./qr.js')).showRoomQR(sv.classroom) }, '▣ QR ห้อง'),
   }), h('div', { class: 'body pad' }, h('button', { class: 'btn pri big', onclick: () => newSheet(sectionId, load) }, '+ สั่งงาน'), h('div', { style: 'height:10px' }), list));
   async function load() {

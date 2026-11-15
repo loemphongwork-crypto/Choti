@@ -51,3 +51,11 @@ export function S(name, args) {
     throw e;
   });
 }
+
+/** ข้อมูลที่จำไว้ในเครื่อง (แสดงทันที แล้วค่อยอัปเดต) */
+export function cacheGet(k) { try { return JSON.parse(localStorage.getItem('c:' + k) || 'null'); } catch (e) { return null; } }
+export function cacheSet(k, v) { try { localStorage.setItem('c:' + k, JSON.stringify(v)); } catch (e) { /* เต็ม/ส่วนตัว */ } }
+/** ส่งข้อมูลต่อให้หน้าถัดไปครั้งเดียว (เช่น เริ่มคาบ → หน้าเช็คชื่อ) */
+const HAND = {};
+export function giveHandoff(k, v) { HAND[k] = v; }
+export function takeHandoff(k) { const v = HAND[k]; delete HAND[k]; return v || null; }

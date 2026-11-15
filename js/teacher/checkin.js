@@ -1,5 +1,6 @@
 // ครู: หน้าการ์ดเช็คชื่อ (แตะ = ตามกล่องสี · กดค้าง = เมนูอื่น)
-import { T } from '../api.js';
+import { T, takeHandoff, cacheSet } from '../api.js';
+import { roomInfo } from './room-info.js';
 import { h, sheet, toast, press, header, errorBox } from '../ui.js';
 import { createQueue } from '../queue.js';
 import { fmtClock, clockToMs, elapsed, endOf, halfAt } from '../period.js';
@@ -10,12 +11,15 @@ const DOT = { P: 'var(--ok)', L: 'var(--l1)', M: 'var(--l2)', S: 'var(--leave)',
 
 export async function render(app, { sectionId }) {
   app.append(h('div', { class: 'loading' }, 'กำลังโหลดรายชื่อ…'));
-  let sv, ss;
-  try {
-    sv = await T('sectionView', { sectionId });
-    if (!sv.openSessionId) { app.replaceChildren(header({ title: sv.classroom.name, sub: sv.course.name, back: '#/t' }), h('div', { class: 'empty' }, 'ยังไม่ได้เริ่มคาบ — กลับไปหน้าห้องแล้วกด "เริ่มคาบ"')); return; }
-    ss = await T('sessionState', { sessionId: sv.openSessionId });
-  } catch (e) { app.replaceChildren(errorBox(e)); return; }
+  // เพิ่งกดเริ่มคาบ = มีข้อมูลส่งต่อมาแล้ว ไม่ต้องโหลดซ้ำ · ไม่งั้นโหลดครั้งเดียวด้วย checkinView
+  let d = takeHandoff('cv:' + sectionId);
+  if (!d) {
+    try { d = await T('checkinView', { sectionId }); } catch (e) { app.replaceChildren(errorBox(e)); return; }
+  }
+  if (!d.session) { app.replaceChildren(header({ title: d.classroom.name, sub: d.course.name, back: '#/t' }), h('div', { class: 'empty' }, 'ยังไม่ได้เริ่มคาบ — กลับไปหน้าห้องแล้วกด "✓ เช็คชื่อ"')); return; }
+  const sv = { classroom: d.classroom, course: d.course, students: d.students };
+  cacheSet('room:' + sectionId, roomInfo(d));
+  const ss = { session: d.session, attendance: d.attendance, serverNow: d.serverNow };
 
   const sessionId = ss.session.id;
   let session = ss.session;
@@ -27,7 +31,13 @@ export async function render(app, { sectionId }) {
 
   const queue = createQueue(STORE, (op) => T(op.name, op.args), (e) => toast('บันทึกไม่สำเร็จ: ' + e.message));
   // การแตะที่ยังค้างในคิว (เช่น เน็ตหลุดแล้วรีเฟรช) ทับข้อมูลจากเซิร์ฟเวอร์
-  try { JSON.parse(localStorage.getItem('q:v1') || '[]').forEach((op) => { if (op.args.sessionId === sessionId && op.args.studentId) att[op.args.studentId] = { status: op.args.status, note: op.args.note || '' }; }); } catch (e) { /* ignore */ }
+  try {
+    JSON.parse(localStorage.getItem('q:v1') || '[]').forEach((op) => {
+      if (op.args.sessionId !== sessionId) return;
+      if (op.name === 'setAttendance' && op.args.studentId) att[op.args.studentId] = { status: op.args.status, note: op.args.note || '' };
+      if (op.name === 'markOnTimeDone') session = Object.assign({}, session, { onTimeEndAt: op.args.undo ? null : op.args.clientTime });
+    });
+  } catch (e) { /* ignore */ }
 
   const undoStack = [];
   let query = '';
@@ -62,6 +72,7 @@ export async function render(app, { sectionId }) {
   const undoBtn = h('button', { class: 'bb', disabled: true, onclick: undo }, h('span', { class: 'i' }, '↶'), 'ย้อน');
   const bbar = h('div', { class: 'bbar' }, undoBtn,
     h('button', { class: 'bb', onclick: () => { const on = searchBox.style.display === 'none'; searchBox.style.display = on ? '' : 'none'; if (on) search.focus(); else { search.value = ''; query = ''; paintGrid(); } } }, h('span', { class: 'i' }, '🔍'), 'ค้นชื่อ'),
+    h('button', { class: 'bb', onclick: () => { location.hash = '#/t/w/' + sectionId; } }, h('span', { class: 'i' }, '📄'), 'สั่งงาน'),
     h('span', { class: 'spacer' }),
     h('button', { class: 'bb wide', onclick: closeFlow }, '■ ปิดคาบ'));
   app.replaceChildren(hd, body, bbar);
@@ -150,9 +161,15 @@ export async function render(app, { sectionId }) {
     paintCard(last.st); paintHead(); queue.flush();
     toast('ย้อนแล้ว');
   }
-  async function endRound1() {
-    try { const r = await T('markOnTimeDone', { sessionId }); session = r.session; paintHead(); toast('จบรอบแรกแล้ว — ต่อไปแตะ = สาย', async () => { const u = await T('markOnTimeDone', { sessionId, undo: true }); session = u.session; paintHead(); }); }
-    catch (e) { toast(e.message); }
+  // จบรอบแรก: เปลี่ยนหน้าจอทันที แล้วส่งขึ้นระบบเบื้องหลัง (เน็ตหลุดก็เก็บไว้ส่งทีหลัง)
+  function endRound1() {
+    const setRound = (done) => {
+      session = Object.assign({}, session, { onTimeEndAt: done ? now() : null });
+      queue.push({ name: 'markOnTimeDone', args: done ? { sessionId } : { sessionId, undo: true } });
+      paintHead(); queue.flush();
+    };
+    setRound(true);
+    toast('จบรอบแรกแล้ว — ต่อไปแตะ = สาย 1 / 2', () => setRound(false));
   }
   function periodSheet() {
     const endIn = h('input', { type: 'time', value: fmtClock(endOf(session)) });
@@ -190,6 +207,7 @@ export async function render(app, { sectionId }) {
   }
   function summary(rows) {
     stop();
+    cacheSet('room:' + sectionId, roomInfo({ classroom: sv.classroom, course: sv.course, students: sv.students, session: null }));
     const by = {};
     rows.forEach((r) => { by[r.studentId] = r; });
     const groups = ['P', 'L', 'M', 'S', 'E', 'A'].map((s) => {

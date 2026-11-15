@@ -196,3 +196,5 @@ a{color:var(--pri)}
 .clock b{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:.5px}
 .clock.over{color:var(--abs)}
 .clock.over b{color:var(--abs)}
+.room .btn{padding:8px 10px;font-size:13.5px;flex:none}
+.room .live{display:inline-block;margin-top:2px}
