@@ -218,3 +218,10 @@ a{color:var(--pri)}
 .grid.photo .card .nick{margin-top:4px;font-size:14.5px}
 .grid.photo .card .nm{display:none}
 .grid.photo .card.s-A .pic{filter:grayscale(1)}
+
+/* ---------- ปุ่มสลับ สาย 1 / สาย 2 ---------- */
+.seg{display:inline-flex;background:#fff;border-radius:12px;padding:3px;gap:3px;vertical-align:middle}
+.seg button{font-size:18px;font-weight:800;padding:6px 12px;border-radius:9px;color:#6b7280;min-height:40px}
+.seg button.on.l1{background:var(--l1);color:#fff}
+.seg button.on.l2{background:var(--l2);color:#fff}
+.phase.p2.m2{background:var(--l2-soft)}

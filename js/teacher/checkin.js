@@ -53,6 +53,10 @@ export async function render(app, { sectionId }) {
   } catch (e) { /* ignore */ }
 
   const undoStack = [];
+  // ปุ่มสลับ สาย 1 / สาย 2 (จำไว้ต่อคาบ)
+  const lateKey = 'late:' + sectionId + ':' + session.startAt;
+  let lateMode = STORE.getItem(lateKey) === 'M' ? 'M' : 'L';
+  function setLateMode(m) { lateMode = m; STORE.setItem(lateKey, m); paintHead(); }
   let query = '';
 
   // ---------- โครงหน้าจอ ----------
@@ -134,13 +138,16 @@ export async function render(app, { sectionId }) {
     const ph = phaseOf(session);
     timeLine.textContent = `เริ่ม ${fmtClock(session.startAt)} · จบ ${fmtClock(endOf(session))} · ครึ่งคาบ ${fmtClock(halfAt(session))} ✎`;
     timeLine.onclick = periodSheet;
-    phase.className = 'phase' + (half ? ' late' : ph === 'after' ? ' p2' : '');
+    phase.className = 'phase' + (half ? ' late' : ph === 'after' ? ' p2' + (lateMode === 'M' ? ' m2' : '') : '');
     const btn = ph === 'round1' && !half
       ? h('div', { class: 'pbtn' }, h('button', { onclick: endRound1 }, 'บันทึก'), h('small', {}, 'จบเรียกชื่อรอบแรก'))
       : null;
     phase.replaceChildren(h('div', { class: 'pl' },
-      h('div', { class: 'tapmean' }, 'แตะ = ', h('em', {}, half ? 'มา' : ph === 'round1' ? 'มา' : 'สาย 1 / 2')),
-      h('div', { class: 'psub' }, half ? 'เกินครึ่งคาบแล้ว — บันทึกเป็นมา พร้อมหมายเหตุให้เอง' : ph === 'round1' ? 'กดค้างการ์ด = ลา · กิจกรรม · ขาด' : 'แตะแล้วเลือก สาย 1 หรือ สาย 2')), ...(btn ? [btn] : []));
+      ph === 'after' && !half
+        ? h('div', { class: 'tapmean' }, 'แตะ = ', h('span', { class: 'seg' },
+          ...['L', 'M'].map((m) => h('button', { class: lateMode === m ? 'on ' + (m === 'L' ? 'l1' : 'l2') : '', onclick: () => setLateMode(m) }, LABEL[m]))))
+        : h('div', { class: 'tapmean' }, 'แตะ = ', h('em', {}, 'มา')),
+      h('div', { class: 'psub' }, half ? 'เกินครึ่งคาบแล้ว — บันทึกเป็นมา พร้อมหมายเหตุให้เอง' : ph === 'round1' ? 'กดค้างการ์ด = ลา · กิจกรรม · ขาด' : 'แตะการ์ดครั้งเดียว = ตามปุ่มที่เลือก · สลับได้ตลอด')), ...(btn ? [btn] : []));
     const c = countStatuses(students.map((s) => att[s.id] || { status: '' }), students.length);
     counts.replaceChildren(
       h('span', { class: 'cnt c-ok' }, 'มา ', h('b', {}, c.P)), h('span', { class: 'cnt c-l' }, 'สาย 1 ', h('b', {}, c.L)), h('span', { class: 'cnt c-l2' }, 'สาย 2 ', h('b', {}, c.M)),
@@ -170,7 +177,7 @@ export async function render(app, { sectionId }) {
     queue.flush();
   }
   function onTap(st) {
-    const act = tapAction(att[st.id] || { status: '' }, phaseOf(session), isHalf());
+    const act = tapAction(att[st.id] || { status: '' }, phaseOf(session), isHalf(), lateMode);
     if (!act) { toast(`${st.nick || st.firstName} เช็คแล้ว — กดค้างเพื่อแก้`); return; }
     if (act.status) { setStatus(st, act.status); return; }
     const sh = sheet({
@@ -203,7 +210,7 @@ export async function render(app, { sectionId }) {
       paintHead(); queue.flush();
     };
     setRound(true);
-    toast('จบรอบแรกแล้ว — ต่อไปแตะ = สาย 1 / 2', () => setRound(false));
+    toast('จบรอบแรกแล้ว — ต่อไปแตะ = สาย 1 (สลับเป็นสาย 2 ได้ที่กล่องสี)', () => setRound(false));
   }
   function periodSheet() {
     const endIn = h('input', { type: 'time', value: fmtClock(endOf(session)) });

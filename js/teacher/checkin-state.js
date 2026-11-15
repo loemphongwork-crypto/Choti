@@ -6,11 +6,11 @@ export function phaseOf(session) {
 }
 
 /** ผลของการแตะการ์ด 1 ครั้ง · null = ไม่ทำอะไร (การ์ดเช็คแล้ว ให้แก้ด้วยกดค้าง) */
-export function tapAction(card, phase, halfPassed) {
+export function tapAction(card, phase, halfPassed, lateMode) {
   if (card.status) return null;
   if (halfPassed) return { status: 'P', half: true };
   if (phase === 'round1') return { status: 'P' };
-  return { ask: ['L', 'M'] };
+  return { status: lateMode === 'M' ? 'M' : 'L' }; // หลังรอบแรก: แตะเดียว ตามปุ่มสลับ สาย 1 / สาย 2
 }
 
 const TONES = /[่-์ั็]/g; // วรรณยุกต์ + ไม้หันอากาศ/ไม้ไต่คู้ ไม่ต้องพิมพ์ถูกเป๊ะ
